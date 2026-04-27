@@ -93,7 +93,10 @@ describe("Deck SVG Structure", () => {
 // ══════════════════════════════════════════════════════════════════════
 
 describe("Ghost Head", () => {
-  beforeEach(async () => { await resetAndReload(); });
+  // Ghost head is now a tool mode — clicking a well only places the ghost
+  // when the tool is active (commit e882960). resetAndReload exits the
+  // tool, so we re-enable it for every test in this block.
+  beforeEach(async () => { await resetAndReload(); await evaluate("() => Twin.setGhostTool(true)"); });
 
   it("appears when clicking a well", async () => {
     setTestName("ghost-appears");
@@ -137,8 +140,9 @@ describe("Ghost Head", () => {
     setTestName("ghost-384well-snap");
     const found = await evaluate<boolean>('() => !!document.querySelector(\'[data-carrier-id="SMP001"][data-position="2"].well\')');
     if (!found) return;
-    await evaluate('() => { const el = document.querySelector(\'[data-carrier-id="SMP001"][data-position="2"].well\'); if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }');
-    await getPage().waitForTimeout(300);
+    // Use Playwright's real click — synthetic MouseEvent('click') doesn't
+    // trigger pointer-event handlers wired by the ghost-tool refactor.
+    await clickFirst('[data-carrier-id="SMP001"][data-position="2"].well');
     const snap = await evaluate<any>("() => ({ carrierId: Twin.State.ghostSnap?.carrierId, pitch: Twin.State.ghostPitch, pos: Twin.State.ghostSnap?.position })");
     await screenshotDeck("384well-snap", "Ghost on 384-well plate, pitch=45 (tight spacing)");
     expect(snap.carrierId).toBe("SMP001");
@@ -166,8 +170,9 @@ describe("Ghost Head", () => {
     setTestName("ghost-384well-align");
     const found = await evaluate<boolean>('() => !!document.querySelector(\'[data-carrier-id="SMP001"][data-position="2"].well\')');
     if (!found) return;
-    await evaluate('() => { const el = document.querySelector(\'[data-carrier-id="SMP001"][data-position="2"].well\'); if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }');
-    await getPage().waitForTimeout(300);
+    // Use Playwright's real click — synthetic MouseEvent('click') doesn't
+    // trigger pointer-event handlers wired by the ghost-tool refactor.
+    await clickFirst('[data-carrier-id="SMP001"][data-position="2"].well');
     const alignment = await evaluate<{ match: boolean }>(`() => {
       const wells = [];
       for (let row = 0; row < 8; row++) {
@@ -200,7 +205,11 @@ describe("Ghost Head", () => {
 // ══════════════════════════════════════════════════════════════════════
 
 describe("Ghost Channel Mask", () => {
-  beforeEach(async () => { await resetAndReload(); await clickFirst(".well"); });
+  beforeEach(async () => {
+    await resetAndReload();
+    await evaluate("() => Twin.setGhostTool(true)");
+    await clickFirst(".well");
+  });
 
   it("all 8 dots active by default (mask=255)", async () => {
     setTestName("mask-all");
@@ -395,7 +404,7 @@ describe("Deck Tooltips", () => {
 
   it("shows visible tooltip on used tip", async () => {
     setTestName("tooltip-used-tip");
-    await sendCmd("C0TPid9001xp01033yp01475tm255tt04");
+    await sendCmd("C0TPid9001xp01033yp01475tm255tt04tp2264th2450td1");
     await evaluate("() => Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(300);
     await evaluate(`() => {
@@ -414,8 +423,8 @@ describe("Deck Tooltips", () => {
 
   it("tooltip updates after aspirate showing reduced volume", async () => {
     setTestName("tooltip-after-aspirate");
-    await sendCmd("C0TPid9002xp01033yp01475tm255tt04");
-    await sendCmd("C0ASid9003xp02383yp01460av01000tm255lm0");
+    await sendCmd("C0TPid9002xp01033yp01475tm255tt04tp2264th2450td1");
+    await sendCmd("C0ASid9003xp02383yp01460av01000tm255lm0zp01500th2450");
     await evaluate("() => Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(300);
     // Show tooltip on aspirated well
@@ -465,8 +474,8 @@ describe("Inspector", () => {
 
   it("inspector SVG shows partly filled after aspirate", async () => {
     setTestName("inspector-partly-filled");
-    await sendCmd("C0TPid9010xp01033yp01475tm255tt04");
-    await sendCmd("C0ASid9011xp02383yp01460av01000tm255lm0");
+    await sendCmd("C0TPid9010xp01033yp01475tm255tt04tp2264th2450td1");
+    await sendCmd("C0ASid9011xp02383yp01460av01000tm255lm0zp01500th2450");
     await getPage().evaluate("Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(1000);
     await getPage().evaluate('Twin.Inspector.showLabware({ carrierIdx:1, carrierId:"SMP001", carrierType:"PLT_CAR_L5MD", position:0, labware: Twin.State.deckData.carriers[1].labware[0], x:0,y:0,w:0,h:0 })');
@@ -502,9 +511,9 @@ describe("Inspector", () => {
 
   it("destination plate shows partial fill after 4ch transfer", async () => {
     setTestName("inspector-4ch-dest");
-    await sendCmd("C0TPid9020xp01033yp01475tm15tt04");
-    await sendCmd("C0ASid9021xp02383yp01460av01000tm15lm0");
-    await sendCmd("C0DSid9022xp03733yp01375dv01000dm0tm15");
+    await sendCmd("C0TPid9020xp01033yp01475tm15tt04tp2264th2450td1");
+    await sendCmd("C0ASid9021xp02383yp01460av01000tm15lm0zp01500th2450");
+    await sendCmd("C0DSid9022xp03733yp01375dv01000dm0tm15zp01500th2450");
     await evaluate("() => Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(500);
     await evaluate('() => { const c = Twin.State.deckData.carriers[2]; Twin.Inspector.showLabware({ carrierIdx:2, carrierId:"DST001", carrierType:c.type, position:0, labware:c.labware[0], x:0,y:0,w:0,h:0 }); }');
@@ -634,7 +643,7 @@ describe("Arm Overlays", () => {
 
   it("PIP arm appears after tip pickup", async () => {
     setTestName("arm-pip");
-    await sendCmd("C0TPid9200xp02383yp01460tm255tt04");
+    await sendCmd("C0TPid9200xp02383yp01460tm255tt04tp2264th2450td1");
     await evaluate('() => { Twin.State.animPipX = 2383; Twin.State.targetPipX = 2383; Twin.State.animPipY = 1375; Twin.State.targetPipY = 1375; Twin.DeckSVG.updateArm(); }');
     await getPage().waitForTimeout(500);
     const display = await evaluate<string>('() => document.querySelector(".arm-pip-head")?.style.display ?? "none"');
@@ -669,7 +678,7 @@ describe("Arm Overlays", () => {
 
   it("PIP arm has 8 channel dots", async () => {
     setTestName("arm-pip-dots");
-    await sendCmd("C0TPid9240xp02383yp01460tm255tt04");
+    await sendCmd("C0TPid9240xp02383yp01460tm255tt04tp2264th2450td1");
     await evaluate('() => { Twin.State.animPipX = 2383; Twin.State.targetPipX = 2383; Twin.DeckSVG.updateArm(); }');
     const dotCount = await evaluate<number>('() => document.querySelectorAll(".arm-pip-dot").length');
     expect(dotCount).toBe(8);
@@ -681,7 +690,11 @@ describe("Arm Overlays", () => {
 // ══════════════════════════════════════════════════════════════════════
 
 describe("Context Menu", () => {
-  beforeEach(async () => { await resetAndReload(); await fillPlate("SMP001", 0, "Sample_A", 2000); });
+  beforeEach(async () => {
+    await resetAndReload();
+    await fillPlate("SMP001", 0, "Sample_A", 2000);
+    await evaluate("() => Twin.setGhostTool(true)");
+  });
 
   it("right-click on deck shows context menu when ghost is active", async () => {
     setTestName("menu-shows");
@@ -741,7 +754,7 @@ describe("Well Fill Visuals", () => {
 
   it("used tips have tip--used class on deck", async () => {
     setTestName("fill-tips");
-    await sendCmd("C0TPid9300xp01033yp01475tm255tt04");
+    await sendCmd("C0TPid9300xp01033yp01475tm255tt04tp2264th2450td1");
     await evaluate("() => Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(300);
     const used = await evaluate<number>('() => document.querySelectorAll(".tip--used").length');
@@ -752,8 +765,8 @@ describe("Well Fill Visuals", () => {
   it("well opacity scales with volume", async () => {
     setTestName("fill-opacity");
     await fillPlate("SMP001", 0, "Sample_A", 2000);
-    await sendCmd("C0TPid9310xp01033yp01475tm255tt04");
-    await sendCmd("C0ASid9311xp02383yp01460av01000tm255lm0");
+    await sendCmd("C0TPid9310xp01033yp01475tm255tt04tp2264th2450td1");
+    await sendCmd("C0ASid9311xp02383yp01460av01000tm255lm0zp01500th2450");
     await evaluate("() => Twin.refreshDeckTracking()");
     await getPage().waitForTimeout(300);
     const op0 = await evaluate<string>('() => document.querySelector(\'[data-well-key="SMP001:0:0"]\')?.style.opacity || ""');

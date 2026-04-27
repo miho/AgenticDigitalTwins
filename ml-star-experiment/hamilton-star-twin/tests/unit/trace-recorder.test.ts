@@ -75,8 +75,8 @@ describe("TraceRecorder (Step 1.12)", () => {
     rec.start();
 
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0");
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0zp01500th2450");
 
     const trace = rec.stop();
     const assessments = trace.timeline.filter((e: any) => e.kind === "assessment");
@@ -200,7 +200,7 @@ describe("TraceRecorder (Step 1.12)", () => {
     rec.start();
 
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     const trace = rec.stop();
     // The tip usage map on tracker state should differ.

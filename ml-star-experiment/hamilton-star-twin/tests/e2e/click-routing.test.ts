@@ -172,8 +172,8 @@ describe("Click routing on plate body (Method1.lay regression)", () => {
     };
     await send("C0VIid8001");
     await send("C0DIid8002");
-    await send("C0TPid8010xp01180yp05298tm1tt04");
-    await send("C0ASid8011xp02756yp05300av03000tm1lm0");  // 300 µL
+    await send("C0TPid8010xp01180yp05298tm1tt04tp2264th2450td1");
+    await send("C0ASid8011xp02756yp05300av03000tm1lm0zp01500th2450");  // 300 µL
     await getPage().waitForTimeout(400);
 
     const result = await evaluate<{ stateVol: number; tooltip: string }>(`() => {

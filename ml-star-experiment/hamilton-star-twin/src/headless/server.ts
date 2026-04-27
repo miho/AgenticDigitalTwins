@@ -32,6 +32,7 @@
 
 import * as path from "path";
 import { setupServer, startHttpServer, VenusBridgeOptions } from "../api/server-setup";
+import type { Deck } from "../twin/deck";
 
 export interface HeadlessOptions {
   layoutPath?: string | null;
@@ -48,6 +49,10 @@ export interface HeadlessOptions {
    *  the real STAR boot state (VENUS drives init, or the UI's "Init
    *  All" button does it). Tests opt in with `autoInit: true`. */
   autoInit?: boolean;
+  /** Pre-built deck. Used by tests to pin the predictable-IDs fallback
+   *  deck so they don't bind to whatever Hamilton install the dev
+   *  machine has on disk. Ignored when `layoutPath` is set. */
+  deck?: Deck;
 }
 
 export interface HeadlessServer {
@@ -68,6 +73,7 @@ export async function startHeadlessServer(options: HeadlessOptions = {}): Promis
     staticDir: options.staticDir,
     venusBridge: options.venusBridge ?? null,
     autoInit: options.autoInit,
+    deck: options.deck,
   });
 
   const { server, port } = await startHttpServer(

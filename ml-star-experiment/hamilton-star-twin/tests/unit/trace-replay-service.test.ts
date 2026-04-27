@@ -56,11 +56,11 @@ function buildTrace(options: { snapshotEveryN?: number } = {}): any {
   const tipPos = twin.wellXY("TIP001", 0, 0);
   twin.fillPlate("SMP001", 0, "Water", 2000);
   // Run a deterministic protocol: pickup → aspirate → dispense somewhere.
-  twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+  twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
   const srcPos = twin.wellXY("SMP001", 0, 0);
-  twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+  twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
   const dstPos = twin.wellXY("SMP001", 0, 5);  // different column
-  twin.sendCommand(`C0DSid0102xp${dstPos.xp}yp${dstPos.yp}dv01000dm0tm255`);
+  twin.sendCommand(`C0DSid0102xp${dstPos.xp}yp${dstPos.yp}dv01000dm0tm255zp01500th2450`);
   // A handful more no-op queries to grow the timeline.
   for (let i = 0; i < 8; i++) twin.sendCommand(`C0RFid${200 + i}`);
 
@@ -425,7 +425,7 @@ describe("TraceReplayService (Step 3.1)", () => {
       const twin = createTestTwin({ autoInit: false });
       const srcPos = twin.wellXY("SMP001", 0, 3);  // different column
       twin.destroy();
-      rs.forkCommand(handle.forkId, `C0ASid7777xp${srcPos.xp}yp${srcPos.yp}av00500tm255lm0`);
+      rs.forkCommand(handle.forkId, `C0ASid7777xp${srcPos.xp}yp${srcPos.yp}av00500tm255lm0zp01500th2450`);
 
       const diff = rs.diffFork(handle.forkId);
       expect(diff.forkCommandCount).toBe(1);

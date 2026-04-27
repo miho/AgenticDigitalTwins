@@ -59,13 +59,13 @@ describe("failure-injection suite — proves tests have teeth", () => {
     twin = createTestTwin();
     twin.fillPlate("SMP001", 0, "Water", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     // SANITY: with the real twin, aspirate depletes the source by exactly 1000.
     {
       const volBefore = twin.getColumnVolumes("SMP001", 0, 0);
       const srcPos = twin.wellXY("SMP001", 0, 0);
-      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       const volAfter = twin.getColumnVolumes("SMP001", 0, 0);
       for (let row = 0; row < 8; row++) {
         expect(volAfter[row]).toBe(volBefore[row] - 1000);
@@ -78,7 +78,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     twin.reset();
     twin.initAll();
     twin.fillPlate("SMP001", 0, "Water", 2000);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     const anyTwin = twin.api as any;
     // Navigate to the internal DeckTracker via the API's device registry.
@@ -103,7 +103,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     const assertionFails = didAssertionFail(() => {
       const volBefore = twin!.getColumnVolumes("SMP001", 0, 0);
       const srcPos = twin!.wellXY("SMP001", 0, 0);
-      twin!.sendCommand(`C0ASid0102xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      twin!.sendCommand(`C0ASid0102xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       const volAfter = twin!.getColumnVolumes("SMP001", 0, 0);
       for (let row = 0; row < 8; row++) {
         expect(volAfter[row]).toBe(volBefore[row] - 1000);
@@ -122,7 +122,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
 
     // SANITY: with the real twin, no-tip aspirate returns error 8.
     {
-      const r = twin.sendCommand("C0ASid0001xp02383yp01375tm255av01000lm0");
+      const r = twin.sendCommand("C0ASid0001xp02383yp01375tm255av01000lm0zp01500th2450");
       expect(r.errorCode).toBe(8);
     }
 
@@ -143,7 +143,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     // The strengthened test that pins error 8 now fails — a test that only
     // checks errorCode > 0 would NOT catch this silent regression.
     const assertionFails = didAssertionFail(() => {
-      const r = twin!.sendCommand("C0ASid0002xp02383yp01375tm255av01000lm0");
+      const r = twin!.sendCommand("C0ASid0002xp02383yp01375tm255av01000lm0zp01500th2450");
       expect(r.errorCode).toBe(8);
     });
 
@@ -158,11 +158,11 @@ describe("failure-injection suite — proves tests have teeth", () => {
     twin.fillPlate("SMP001", 0, "Water", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     // SANITY: a real aspirate produces a populated TADM curve.
     {
-      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       const events = twin.getAssessments({ category: "tadm" });
       const curve = events[events.length - 1]?.tadm;
       expect(curve).toBeTruthy();
@@ -184,7 +184,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     };
 
     const assertionFails = didAssertionFail(() => {
-      twin!.sendCommand(`C0ASid0102xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      twin!.sendCommand(`C0ASid0102xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       const events = twin!.getAssessments({ category: "tadm" });
       // The real assertion from head-384-fix.test.ts strengthened version:
       const curve = events[events.length - 1]?.tadm;
@@ -205,14 +205,14 @@ describe("failure-injection suite — proves tests have teeth", () => {
     twin.fillPlate("SMP001", 0, "Water", 500);   // 50 µL — much less than we'll aspirate
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     // SANITY: over-aspirating emits volume_underflow events. The deck-tracker
     // volume is pinned to Σ components by the liquid-tracker (truthful
     // representation), so it doesn't go negative — the EVENT is the
     // authoritative safety signal.
     {
-      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av09999tm255lm0`);
+      twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av09999tm255lm0zp01500th2450`);
       const underflows = twin.getAssessments({ category: "volume_underflow" });
       expect(underflows.length).toBeGreaterThan(0);
     }
@@ -223,7 +223,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     twin.reset();
     twin.initAll();
     twin.fillPlate("SMP001", 0, "Water", 500);
-    twin.sendCommand(`C0TPid0200xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0200xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
     const anyTwin = twin.api as any;
     const device = anyTwin.devices.get(twin.deviceId);
@@ -235,7 +235,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     };
 
     const assertionFails = didAssertionFail(() => {
-      twin!.sendCommand(`C0ASid0201xp${srcPos.xp}yp${srcPos.yp}av09999tm255lm0`);
+      twin!.sendCommand(`C0ASid0201xp${srcPos.xp}yp${srcPos.yp}av09999tm255lm0zp01500th2450`);
       const underflows = twin!.getAssessments({ category: "volume_underflow" });
       expect(underflows.length).toBeGreaterThan(0);  // would fail — we suppressed them
     });
@@ -279,7 +279,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     // SANITY: aspirate without tips is rejected AND source volumes are unchanged.
     {
       const volBefore = twin.getColumnVolumes("SMP001", 0, 0);
-      const r = twin.sendCommand(`C0ASid0001xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      const r = twin.sendCommand(`C0ASid0001xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       expect(r.errorCode).toBe(8);
       const volAfter = twin.getColumnVolumes("SMP001", 0, 0);
       expect(volAfter).toEqual(volBefore);
@@ -311,7 +311,7 @@ describe("failure-injection suite — proves tests have teeth", () => {
     // A pin-on-error-code-AND-source-unchanged test catches this.
     const assertionFails = didAssertionFail(() => {
       const volBefore = twin!.getColumnVolumes("SMP001", 0, 0);
-      const r = twin!.sendCommand(`C0ASid0002xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+      const r = twin!.sendCommand(`C0ASid0002xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
       expect(r.errorCode).toBe(8);  // would fail (broken returns 0)
       const volAfter = twin!.getColumnVolumes("SMP001", 0, 0);
       expect(volAfter).toEqual(volBefore);  // also fails (source was decremented)

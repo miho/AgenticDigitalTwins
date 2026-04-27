@@ -73,7 +73,7 @@ describe("ReportGenerator (Step 4.A)", () => {
       const rec = new TraceRecorder(getInternalTwin(twin.api, twin.deviceId));
       rec.start();
       // Aspirate at unresolved coordinates → assessment(s).
-      twin.sendCommand("C0ASid0001xp00000yp00000av01000tm255lm0");
+      twin.sendCommand("C0ASid0001xp00000yp00000av01000tm255lm0zp01500th2450");
       const trace = rec.stop();
 
       const summary = protocolSummary(trace);
@@ -136,14 +136,14 @@ describe("ReportGenerator (Step 4.A)", () => {
 
       // Pick up tip.
       const tip = twin.wellXY("TIP001", 0, 0);
-      twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04`);
+      twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
 
       // Fill a well so aspirate has liquid to pull from.
       twin.fillPlate("SMP001", 0, "water", 2000);
 
       // Aspirate from well A1 of SMP001 position 0.
       const smp = twin.wellXY("SMP001", 0, 0);
-      twin.sendCommand(`C0ASid0201xp${smp.xp}yp${smp.yp}av00500tm001lm0`);
+      twin.sendCommand(`C0ASid0201xp${smp.xp}yp${smp.yp}av00500tm001lm0zp01500th2450`);
 
       const trace = rec.stop();
       const key = "SMP001:0:0";
@@ -192,7 +192,7 @@ describe("ReportGenerator (Step 4.A)", () => {
       const rec = new TraceRecorder(getInternalTwin(twin.api, twin.deviceId));
       rec.start();
       // Trigger unresolved-position assessment + subsequent assessments.
-      twin.sendCommand("C0ASid0001xp00000yp00000av01000tm255lm0");
+      twin.sendCommand("C0ASid0001xp00000yp00000av01000tm255lm0zp01500th2450");
       const trace = rec.stop();
 
       const csv = assessmentCsv(trace);

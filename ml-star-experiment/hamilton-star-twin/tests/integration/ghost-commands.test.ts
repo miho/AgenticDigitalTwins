@@ -78,7 +78,7 @@ describe("Ghost-head command battle tests", () => {
   describe("Tip pickup masks", () => {
     it("tm=255 picks up all 8 channels", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: true, 1: true, 7: true }, 8);
@@ -86,7 +86,7 @@ describe("Ghost-head command battle tests", () => {
 
     it("tm=1 picks up channel 1 only", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm1tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm1tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: true, 1: false, 7: false }, 1);
@@ -94,7 +94,7 @@ describe("Ghost-head command battle tests", () => {
 
     it("tm=15 picks up channels 1-4", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: true, 1: true, 2: true, 3: true, 4: false, 7: false }, 4);
@@ -102,7 +102,7 @@ describe("Ghost-head command battle tests", () => {
 
     it("tm=240 picks up channels 5-8", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: false, 3: false, 4: true, 5: true, 6: true, 7: true }, 4);
@@ -111,7 +111,7 @@ describe("Ghost-head command battle tests", () => {
     it("tm=170 picks up channels 2,4,6,8 (alternating)", async () => {
       // 170 = 10101010 binary
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm170tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm170tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: false, 1: true, 2: false, 3: true, 4: false, 5: true, 6: false, 7: true }, 4);
@@ -119,7 +119,7 @@ describe("Ghost-head command battle tests", () => {
 
     it("tm=128 picks up channel 8 only", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm128tt04`);
+      const r = await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm128tt04tp2264th2450td1`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
       await assertTipState({ 0: false, 6: false, 7: true }, 1);
@@ -135,8 +135,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -150,8 +150,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -165,8 +165,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm15lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm15lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -178,8 +178,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm1tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm1lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm1tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm1lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -193,8 +193,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm128tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm128lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm128tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm128lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -208,8 +208,8 @@ describe("Ghost-head command battle tests", () => {
       const tip1 = await wellXY("TIP001", 0, 1);
       const src1 = await wellXY("SMP001", 0, 1);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip1.xp}yp${tip1.yp}tm255tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src1.xp}yp${src1.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0001xp${tip1.xp}yp${tip1.yp}tm255tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src1.xp}yp${src1.yp}av01000tm255lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
 
       const col0 = await getColumnVolumes("SMP001", 0, 0);
@@ -231,9 +231,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -245,9 +245,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0`);
-      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm240`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`);
+      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm240zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -259,9 +259,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm15lm0`);
-      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm15`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm15tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm15lm0zp01500th2450`);
+      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm15zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -288,10 +288,10 @@ describe("Ghost-head command battle tests", () => {
         const dst = await wellXY("DST001", 0, 0);
 
         await fillPlate("SMP001", 0, "Sample", 2000);
-        await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm${mask}tt04`);
-        await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm${mask}lm0`);
-        await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm${mask}`);
-        await sendCommand(`C0TRid0004tm${mask}`);
+        await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm${mask}tt04tp2264th2450td1`);
+        await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm${mask}lm0zp01500th2450`);
+        await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm${mask}zp01500th2450`);
+        await sendCommand(`C0TRid0004tm${mask}tz1985th2450`);
 
         const srcVols = await getColumnVolumes("SMP001", 0, 0);
         const dstVols = await getColumnVolumes("DST001", 0, 0);
@@ -320,7 +320,7 @@ describe("Ghost-head command battle tests", () => {
       await fillPlate("SMP001", 0, "Sample", 2000);
       const volBefore = await getColumnVolumes("SMP001", 0, 0);
 
-      const r = await sendCommand(`C0ASid0001xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      const r = await sendCommand(`C0ASid0001xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       expect(r.errorCode).toBe(8);  // 8 = no tip fitted
 
       // Source volumes unchanged — rejection means no physical aspirate.
@@ -332,7 +332,7 @@ describe("Ghost-head command battle tests", () => {
       const dst = await wellXY("DST001", 0, 0);
       const volBefore = await getColumnVolumes("DST001", 0, 0);
 
-      const r = await sendCommand(`C0DSid0001xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      const r = await sendCommand(`C0DSid0001xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       expect(r.errorCode).toBe(8);  // 8 = no tip fitted
 
       // Destination volumes unchanged — rejection means no physical dispense.
@@ -342,8 +342,8 @@ describe("Ghost-head command battle tests", () => {
 
     it("tip pickup when tips already fitted on same channels → error 07", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      const r = await sendCommand(`C0TPid0002xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0TPid0002xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       expect(r.errorCode).toBe(7);
     });
 
@@ -351,8 +351,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       // Don't fill the plate — wells are all 0
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      const r = await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       expect(r.accepted).toBe(true); // SCXML accepts (adds volume to channels)
       // But well volumes stay at 0
       await assertColumnVolumes("SMP001", 0, 0, [0, 0, 0, 0, 0, 0, 0, 0]);
@@ -370,9 +370,9 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 5000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      await sendCommand(`C0ASid0003xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      await sendCommand(`C0ASid0003xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
 
       await assertChannelVolumes({ 0: 2000, 7: 2000 });
       await assertColumnVolumes("SMP001", 0, 0, [3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000]);
@@ -383,10 +383,10 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       // Dispense only 500 (partial, dm=2)
-      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv00500dm2tm255`);
+      const r = await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv00500dm2tm255zp01500th2450`);
       expect(r.accepted).toBe(true);
 
       // Channels should have 500 remaining
@@ -400,9 +400,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst1 = await wellXY("DST001", 0, 1);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04`); // ch 5-8
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0`); // from SMP001 col 0
-      await sendCommand(`C0DSid0003xp${dst1.xp}yp${dst1.yp}dv01000dm0tm240`); // to DST001 col 1
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`); // ch 5-8
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`); // from SMP001 col 0
+      await sendCommand(`C0DSid0003xp${dst1.xp}yp${dst1.yp}dv01000dm0tm240zp01500th2450`); // to DST001 col 1
 
       const srcCol0 = await getColumnVolumes("SMP001", 0, 0);
       const dstCol1 = await getColumnVolumes("DST001", 0, 1);
@@ -426,24 +426,24 @@ describe("Ghost-head command battle tests", () => {
   describe("Tip eject and re-pickup", () => {
     it("eject clears all channels", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       await assertTipState({ 0: true, 7: true }, 8);
 
-      await sendCommand(`C0TRid0002tm255`);
+      await sendCommand(`C0TRid0002tm255tz1985th2450`);
       await assertTipState({ 0: false, 7: false }, 0);
     });
 
     it("pickup → eject → pickup again succeeds", async () => {
       const tip0 = await wellXY("TIP001", 0, 0);
       const tip1 = await wellXY("TIP001", 0, 1);
-      await sendCommand(`C0TPid0001xp${tip0.xp}yp${tip0.yp}tm15tt04`);
+      await sendCommand(`C0TPid0001xp${tip0.xp}yp${tip0.yp}tm15tt04tp2264th2450td1`);
       await assertTipState({ 0: true, 3: true, 4: false }, 4);
 
-      await sendCommand(`C0TRid0002tm15`);
+      await sendCommand(`C0TRid0002tm15tz1985th2450`);
       await assertTipState({ 0: false, 3: false }, 0);
 
       // Pick up from different column with different mask
-      await sendCommand(`C0TPid0003xp${tip1.xp}yp${tip1.yp}tm240tt04`);
+      await sendCommand(`C0TPid0003xp${tip1.xp}yp${tip1.yp}tm240tt04tp2264th2450td1`);
       await assertTipState({ 0: false, 3: false, 4: true, 7: true }, 4);
     });
   });
@@ -457,8 +457,8 @@ describe("Ghost-head command battle tests", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`);
 
       const events = await getAssessments();
       const tadm = events.filter((e: any) => e.category === "tadm" && e.command === "C0AS");
@@ -470,9 +470,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
 
       const events = await getAssessments();
       const tadm = events.filter((e: any) => e.category === "tadm" && e.command === "C0DS");
@@ -493,16 +493,16 @@ describe("Ghost-head command battle tests", () => {
       let states = await getModuleStates("pip");
       expect(states).toContain("no_tip");
 
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       states = await getModuleStates("pip");
       expect(states).toContain("tip_empty");
 
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       states = await getModuleStates("pip");
       expect(states).toContain("tip_loaded");
 
-      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       states = await getModuleStates("pip");
       expect(states).toContain("tip_empty");
     });
@@ -512,9 +512,9 @@ describe("Ghost-head command battle tests", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample", 2000);
-      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv00500dm2tm255`);
+      await sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0002xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      await sendCommand(`C0DSid0003xp${dst.xp}yp${dst.yp}dv00500dm2tm255zp01500th2450`);
 
       const states = await getModuleStates("pip");
       expect(states).toContain("tip_loaded");

@@ -28,27 +28,27 @@ describe("multi-channel contamination surfacing", () => {
 
     const tipPos = twin.wellXY("TIP001", 0, 0);
     twin.sendCommand(
-      `C0TPid0001xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm255tt04`,
+      `C0TPid0001xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm255tt04tp2264th2450td1`,
     );
 
     // Step 1: 8-channel aspirate from SMP col 1 (Stock).
     const src = twin.wellXY("SMP001", 0, 0);
     twin.sendCommand(
-      `C0ASid0002xp${String(src.xp).padStart(5, "0")}yp${String(src.yp).padStart(5, "0")}av01000tm255lm0`,
+      `C0ASid0002xp${String(src.xp).padStart(5, "0")}yp${String(src.yp).padStart(5, "0")}av01000tm255lm0zp01500th2450`,
     );
 
     // Dispense into col 1 (Diluent) of same plate so col 1 becomes a
     // Stock+Diluent mixture.
     const dst = twin.wellXY("SMP001", 0, 1);
     twin.sendCommand(
-      `C0DSid0003xp${String(dst.xp).padStart(5, "0")}yp${String(dst.yp).padStart(5, "0")}dv01000tm255dm2`,
+      `C0DSid0003xp${String(dst.xp).padStart(5, "0")}yp${String(dst.yp).padStart(5, "0")}dv01000tm255dm2zp01500th2450`,
     );
 
     // Step 2: 8-channel aspirate FROM the mixture with tips still
     // carrying Stock residue. Each of the 8 channels should trigger a
     // separate contamination assessment.
     const r = twin.sendCommand(
-      `C0ASid0004xp${String(dst.xp).padStart(5, "0")}yp${String(dst.yp).padStart(5, "0")}av00500tm255lm0`,
+      `C0ASid0004xp${String(dst.xp).padStart(5, "0")}yp${String(dst.yp).padStart(5, "0")}av00500tm255lm0zp01500th2450`,
     );
     expect(r.accepted).toBe(true);
 

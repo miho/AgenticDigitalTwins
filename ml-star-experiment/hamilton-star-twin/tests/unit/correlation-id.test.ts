@@ -66,7 +66,7 @@ describe("Correlation IDs (Step 1.9)", () => {
   it("deckInteraction produced by a command shares the command's correlationId", () => {
     twin = createTestTwin();
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    const r = twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    const r = twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
     expect(r.accepted).toBe(true);
     expect(r.deckInteraction).toBeDefined();
     expect(r.deckInteraction!.correlationId).toBe(r.correlationId);
@@ -75,9 +75,9 @@ describe("Correlation IDs (Step 1.9)", () => {
   it("all assessments emitted by one command share its correlationId", () => {
     twin = createTestTwin();
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
     // Aspirate at (0,0) — unresolved → emits an unresolved_position assessment.
-    const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0");
+    const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0zp01500th2450");
     const ids = (r.assessments || []).map((a) => a.correlationId);
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id).toBe(r.correlationId);
@@ -86,8 +86,8 @@ describe("Correlation IDs (Step 1.9)", () => {
   it("assessments in the store are findable by correlationId", () => {
     twin = createTestTwin();
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0");
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0zp01500th2450");
     const all = twin.getAssessments();
     const matching = all.filter((a) => a.correlationId === r.correlationId);
     expect(matching.length).toBeGreaterThan(0);
@@ -100,7 +100,7 @@ describe("Correlation IDs (Step 1.9)", () => {
 
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const r = internal.sendCommand(
-      `C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`,
+      `C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`,
       { stepId }
     );
 

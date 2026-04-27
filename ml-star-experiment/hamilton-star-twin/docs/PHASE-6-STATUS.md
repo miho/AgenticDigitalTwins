@@ -1,6 +1,17 @@
 # Phase 6 — Real-VENUS Compatibility
 
-**Status (2026-04-20 — latest):** Back-to-back envelope smoothness
+**Status (2026-04-27 — latest):** Post-Phase-6 polish landed
+(`43be525`) — global sim-speed + Fast-Init settings, CNC retract → XY
+travel → descend motion envelope, per-channel Y/Z spread, Hamilton Z
+convention enforced everywhere (bigger pos_z = higher), tip-type
+geometry on the labware catalog, and strict FW Z-param validation
+(C0TP / C0TR / C0AS / C0DS error with code 3 when missing required Z
+params, mirroring real STAR). Documentation cleanup + test-helper fix
+(`createTestTwin` now pins the predictable-IDs fallback deck so tests
+don't bind to whatever Hamilton install happens to be on disk):
+**448 pass / 3 skip / 0 fail** unit tests.
+
+**Status (2026-04-20):** Back-to-back envelope smoothness
 landed (see 2026-04-20 cycle below) — the arm no longer snaps back /
 replays motion between consecutive commands. Portable `.zip` release
 shipped (`HamiltonStarTwin-<version>-x64.zip`, bundled Node runtime).
@@ -35,7 +46,7 @@ architecture epics (#33-#53).
 cat hamilton-star-twin/docs/PHASE-6-STATUS.md   # this file — single source of truth
 git log --oneline -10                            # latest commits (see "This cycle's commits" below)
 cd hamilton-star-twin && npm run build           # clean-room rebuild works as of milestone A.1
-npx vitest run tests/unit                        # 434 pass / 3 skip / 0 fail as of 2026-04-20
+npx vitest run tests/unit                        # 448 pass / 3 skip / 0 fail as of 2026-04-27
 npm run test:visual                              # VISUAL_COMPARE=1 — 13 pixelmatch-gated shots
                                                  # against committed baselines in
                                                  # docs/tutorial-images/. Run
@@ -52,6 +63,122 @@ curl -s -X POST http://localhost:8233/command -H 'content-type: application/json
 curl -s http://localhost:8233/state | jq '.modules.autoload.variables'
 # expect: carriers_on_deck=1, pos_track=15, target_track=15
 ```
+
+## 2026-04-27 cycle — sim settings, CNC motion, Hamilton Z convention, strict FW validation
+
+Commits on master:
+
+```
+43be525  twin: global sim settings, CNC motion, per-channel Y/Z, Hamilton Z convention
+```
+
+**1. Global simulation settings (`api.ts`, `rest-api.ts`, `mcp-server.ts`,
+`server-setup.ts`, `index.html`, `renderer.ts`).** A single
+`TwinSettings` store on `DigitalTwinAPI` — `{ simSpeed, fastInit }`,
+defaults `{ 1, true }` — backs three transports:
+
+- `GET /settings` / `POST /settings` — JSON; SSE broadcasts a
+  `settings-changed` event so all connected clients (dashboard header
+  + protocol editor) resync.
+- MCP `twin.getSettings` / `twin.setSettings`.
+- Dashboard header: Speed dropdown + Fast Init checkbox.
+
+`simSpeed` follows the existing `applySimSpeed` multiplier convention
+(0 = instant, 0.5 = 2× faster than real time, 1 = real time, 2 =
+2× slower). `fastInit` collapses the six init commands
+(C0VI/C0DI/C0EI/C0FI/C0II/C0JI) to `simSpeed=0` and flushes pending
+SCXML delayed events so "Init All" lands in `sys_ready` immediately
+even at real-time `simSpeed=1`. Per-command `simSpeed` overrides on
+`/command` and `/step` still win.
+
+**2. CNC retract → travel → descend (`arm.ts`, `3d.js`,
+`digital-twin.ts`).** Every motion envelope now drives a five-phase
+profile through `sampleZFromPhases`: dwell-up → retract → XY travel
+→ descend → dwell-down. Phase boundaries come from
+`computePhaseBoundaries` partitioning **physical distance** at nominal
+STAR speeds (Z = 300 mm/s, XY = 800 mm/s) with a 40 ms floor per phase.
+A 200 mm Z descent gets time proportional to its travel — no more
+snap motion from a fixed 15% phase fraction. `safeTravelZ` returns
+`min(start, end, 0)` (Hamilton convention: lowest pos_z = most
+extended) so the arm is always fully retracted during XY travel
+regardless of the labware-derived `th` VENUS picked.
+
+**3. Per-channel Y/Z spread (`digital-twin.ts`, `arm.ts`,
+`deck-svg.ts`, `state.ts`).** `MotionEnvelope` now carries
+`startY_ch[]`, `endY_ch[]`, `startZ_ch[]`, `endZ_ch[]`, `dwellZ_ch[]`.
+`extractMotionEnvelope` populates these from the datamodel +
+`_yp_array` / `_zp_array`. The renderer's `state.animPipY_ch` /
+`animPipZ_ch` arrays drive the 2D SVG arm (each channel pin at its own
+Y; bounding rect spans `min..max`) and the 3D pin geometry. Real PIP
+channels share an X rail at fixed 9 mm pitch but each has its own Y
+and Z drive — partial-mask aspirates spread the channels accordingly.
+
+**4. Hamilton Z convention enforced (`3d.js`, `arm.ts`,
+`digital-twin.ts`, `well-geometry.ts`).** `pos_z` measures **height
+above the deck** in 0.1 mm. Bigger = higher = safer. Verified against
+`simulateLLD` (`tipZ_01mm <= liquidSurfaceAbsolute` for detection) and
+real-trace values from `pip-command-catalog` (`th=2450` traverse,
+`zl=1941` liquid surface, `zx=1891` min safe Z — monotonic). Sites
+flipped from inverted convention:
+
+- `placePip` in `3d.js`: `tip_end world Y = pos_z / 10`. Was previously
+  treating bigger pos_z as deeper extension; tips dove INTO the deck
+  during travel.
+- `armZFromArray`: returns `min(pos_z[])` for "deepest channel"
+  (Hamilton convention) instead of `max`.
+- `safeTravelZ`: `Math.min(start, end, 0)` (lowest = highest
+  physically) instead of `Math.max`.
+- `trajectoryPoints`: drops the `GANTRY_TOP_Y_MM` subtraction —
+  Hamilton-direct mapping now.
+
+**5. Tip geometry on the labware catalog (`labware-catalog.ts`,
+`deck.ts`, `venus-steps.ts`).** `LabwareCatalogEntry` for `tip_rack`
+entries carries `tipLength` / `tipCollarHeight` / `tipProtrusion`:
+
+| Type | tipLength | tipCollarHeight | tipProtrusion |
+|---|---|---|---|
+| `Tips_1000uL` | 950 (95 mm) | 115 | 150 |
+| `Tips_300uL` | 600 (60 mm) | 80 | 120 |
+| `Tips_50uL` | 350 (35 mm) | 50 | 80 |
+
+`venus-steps.tipPickUp` derives `tp = rackTop + tipProtrusion -
+tipCollarHeight/2` (nozzle lands mid-collar for grip) and `th =
+rackTop + tipLength + 50` (5 mm above rack top with the tip fitted)
+via `findCatalogEntry()`. Earlier hardcoded `tp=2000` / `th=1450` /
+`tz=2000` constants were both inverted-convention and
+geometry-ignorant. `tipEject` now uses `deck.getWasteEjectPositions().z`
+instead of hardcoded `tz=2000`.
+
+**6. Strict FW Z-param validation (`pip-physics.ts validateCommand`).**
+A C0TP without `tp`/`th`, a C0AS / C0DS without `zp` (and no `lp`+`lm>0`
+LLD search), a C0TR without `tz`/`th` — all error with code 3, just
+like real STAR firmware. Rationale (locked by user directive): the
+twin is a test target for customer software; if a user's code sends a
+malformed command, the twin must reject it so the bug shows up on the
+simulator instead of fooling its way through CI and crashing on real
+hardware.
+
+**7. Test-helper deck pinning (`tests/helpers/in-process.ts`,
+`deck.ts`).** `createDefaultDeckLayout()` prefers a real
+`Method1.lay` from a Hamilton install when one is on disk, which uses
+Hamilton-style auto-generated carrier IDs. Tests assume the
+predictable-IDs fallback deck (`TIP001`, `SMP001`, `DST001`, `RGT001`,
+`TIP002`, `WASH01`, `HHS001`, `TCC001`). `createFallbackDeckLayout`
+is now exported and `createTestTwin()` passes it directly so tests run
+against the same deck regardless of dev-machine state.
+
+`tests/unit/deck-config-serialization.test.ts` and
+`tests/unit/deck-tracker-serialization.test.ts` import the fallback
+under the old name (`{ createFallbackDeckLayout: createDefaultDeckLayout }`)
+since they directly test the deck layer (no `createTestTwin`).
+
+**Test status at cycle close:**
+
+- `npx vitest run tests/unit` → 448 pass / 3 skip / 0 fail.
+- All 14 test files that send raw C0TP/C0AS/C0DS/C0TR commands now
+  carry the required Z params (mirrors real-VENUS traces).
+
+---
 
 ## 2026-04-20 cycle — envelope smoothness, portable release, per-channel isolation
 

@@ -32,7 +32,7 @@ describe("motion envelopes", () => {
     twin!.sendCommand(`C0JMid0001xp${String(500).padStart(5, "0")}`);
     envelopes = [];
 
-    twin!.sendCommand(`C0TPid0002xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm255tt04`);
+    twin!.sendCommand(`C0TPid0002xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm255tt04tp2264th2450td1`);
 
     expect(envelopes.length).toBeGreaterThanOrEqual(1);
     const env = envelopes[envelopes.length - 1];
@@ -92,12 +92,12 @@ describe("motion envelopes", () => {
     const b = twin!.wellXY("SMP001", 2, 0, 0);
 
     const ypA = `0 0 ${a.yp} 0 0 0 0 0`;
-    const resA = twin!.sendCommand(`C0ASid0002xp${a.xp}yp${ypA}av01000tm04lm0`);
+    const resA = twin!.sendCommand(`C0ASid0002xp${a.xp}yp${ypA}av01000tm04lm0zp01500th2450`);
     expect(resA.accepted).toBe(true);
     twin!.flushPending();
     envelopes = [];
 
-    twin!.sendCommand(`C0ASid0003xp${b.xp}yp${b.yp}av01000tm01lm0`);
+    twin!.sendCommand(`C0ASid0003xp${b.xp}yp${b.yp}av01000tm01lm0zp01500th2450`);
     expect(envelopes.length).toBeGreaterThanOrEqual(1);
     const env = envelopes[envelopes.length - 1];
     expect(env.arm).toBe("pip");
@@ -120,7 +120,7 @@ describe("motion envelopes", () => {
     envelopes = [];
 
     const ypArr = `0 0 ${a.yp} 0 0 0 0 0`;
-    twin!.sendCommand(`C0ASid0002xp${a.xp}yp${ypArr}av01000tm04lm0`);
+    twin!.sendCommand(`C0ASid0002xp${a.xp}yp${ypArr}av01000tm04lm0zp01500th2450`);
 
     expect(envelopes.length).toBeGreaterThanOrEqual(1);
     const env = envelopes[envelopes.length - 1];

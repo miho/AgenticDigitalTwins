@@ -73,7 +73,7 @@ describe("Session save/load (Step 1.7)", () => {
   it("save after a tip pickup preserves the tip-used flag across load", () => {
     twin = createTestTwin();
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
     const tipUsageBefore = twin.getTracking().tipUsage;
     const usedCount = Object.keys(tipUsageBefore).length;
     expect(usedCount).toBeGreaterThan(0);

@@ -23,11 +23,11 @@ describe("no_deck_effect guard — C0AS/C0DS must never silently no-op", () => {
   it("C0AS with av=0 emits a no_deck_effect assessment AND a DECK log", () => {
     // Fabricate a tip pickup so the pip state machine accepts C0AS.
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0001xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04`);
+    twin.sendCommand(`C0TPid0001xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04tp2264th2450td1`);
 
     const plate = twin.wellXY("SMP001", 0, 0);
     const result = twin.sendCommand(
-      `C0ASid0002xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}av00000tm1lm0`,
+      `C0ASid0002xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}av00000tm1lm0zp01500th2450`,
     );
     expect(result.accepted).toBe(true);
     const assessments = (result as any).assessments ?? [];
@@ -41,11 +41,11 @@ describe("no_deck_effect guard — C0AS/C0DS must never silently no-op", () => {
 
   it("C0DS with dv=0 emits a no_deck_effect assessment AND a DECK log", () => {
     const tipPos = twin.wellXY("TIP001", 0, 1);
-    twin.sendCommand(`C0TPid0003xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04`);
+    twin.sendCommand(`C0TPid0003xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04tp2264th2450td1`);
 
     const plate = twin.wellXY("SMP001", 0, 0);
     const result = twin.sendCommand(
-      `C0DSid0004xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}dv00000tm1dm2`,
+      `C0DSid0004xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}dv00000tm1dm2zp01500th2450`,
     );
     expect(result.accepted).toBe(true);
     const assessments = (result as any).assessments ?? [];
@@ -58,10 +58,10 @@ describe("no_deck_effect guard — C0AS/C0DS must never silently no-op", () => {
 
   it("C0AS with real volume but unresolved xp/yp emits a no_deck_effect assessment", () => {
     const tipPos = twin.wellXY("TIP001", 0, 2);
-    twin.sendCommand(`C0TPid0005xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04`);
+    twin.sendCommand(`C0TPid0005xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04tp2264th2450td1`);
 
     // Way off-deck coordinates — nothing should resolve here.
-    const result = twin.sendCommand(`C0ASid0006xp40000yp30000av01000tm1lm0`);
+    const result = twin.sendCommand(`C0ASid0006xp40000yp30000av01000tm1lm0zp01500th2450`);
     expect(result.accepted).toBe(true);
     const assessments = (result as any).assessments ?? [];
     const unresolved = assessments.find((a: any) => a.category === "no_deck_effect");
@@ -73,9 +73,9 @@ describe("no_deck_effect guard — C0AS/C0DS must never silently no-op", () => {
 
   it("C0DS with real volume but unresolved xp/yp emits a no_deck_effect assessment", () => {
     const tipPos = twin.wellXY("TIP001", 0, 3);
-    twin.sendCommand(`C0TPid0007xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04`);
+    twin.sendCommand(`C0TPid0007xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04tp2264th2450td1`);
 
-    const result = twin.sendCommand(`C0DSid0008xp40000yp30000dv01000tm1dm2`);
+    const result = twin.sendCommand(`C0DSid0008xp40000yp30000dv01000tm1dm2zp01500th2450`);
     expect(result.accepted).toBe(true);
     const assessments = (result as any).assessments ?? [];
     const unresolved = assessments.find((a: any) => a.category === "no_deck_effect");
@@ -89,11 +89,11 @@ describe("no_deck_effect guard — C0AS/C0DS must never silently no-op", () => {
     const fill = twin.api.fillLabwareWithLiquid(twin.deviceId, "SMP001", 0, "Water", 5000);
     expect(fill).toBe(true);
     const tipPos = twin.wellXY("TIP001", 0, 4);
-    twin.sendCommand(`C0TPid0009xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04`);
+    twin.sendCommand(`C0TPid0009xp${String(tipPos.xp).padStart(5, "0")}yp${String(tipPos.yp).padStart(5, "0")}tm1tt04tp2264th2450td1`);
 
     const plate = twin.wellXY("SMP001", 0, 0);
     const result = twin.sendCommand(
-      `C0ASid0010xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}av01000tm1lm0`,
+      `C0ASid0010xp${String(plate.xp).padStart(5, "0")}yp${String(plate.yp).padStart(5, "0")}av01000tm1lm0zp01500th2450`,
     );
     expect(result.accepted).toBe(true);
     const assessments = (result as any).assessments ?? [];

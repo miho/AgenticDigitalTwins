@@ -32,14 +32,14 @@ describe("Per-channel isolation across tm-masked ops", () => {
     twin.fillPlate("SMP001", 0, "water", 15000);
     const smp = twin.wellXY("SMP001", 0, 0, 0);
     // Aspirate 500 on ch0 (tm=1)
-    twin.sendCommand(`C0ASid0002xp${smp.xp}yp${smp.yp}av00500tm01lm0`);
+    twin.sendCommand(`C0ASid0002xp${smp.xp}yp${smp.yp}av00500tm01lm0zp01500th2450`);
     const s1 = twin.getState();
     const vol_after_ch0 = s1.modules.pip!.variables.volume as number[];
     expect(vol_after_ch0[0]).toBe(500);
     expect(vol_after_ch0[1]).toBe(0);  // ch1 untouched
 
     // Aspirate 300 on ch1 (tm=2) — ch0 should stay at 500, not be overwritten
-    twin.sendCommand(`C0ASid0003xp${smp.xp}yp${smp.yp}av00300tm02lm0`);
+    twin.sendCommand(`C0ASid0003xp${smp.xp}yp${smp.yp}av00300tm02lm0zp01500th2450`);
     const s2 = twin.getState();
     const vol_after_ch1 = s2.modules.pip!.variables.volume as number[];
     expect(vol_after_ch1[0]).toBe(500);   // ← before fix: gets overwritten with 300
@@ -52,8 +52,8 @@ describe("Per-channel isolation across tm-masked ops", () => {
     twin.sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264tz2164th2450td1`);
     twin.fillPlate("SMP001", 0, "water", 15000);
     const smp = twin.wellXY("SMP001", 0, 0, 0);
-    twin.sendCommand(`C0ASid0002xp${smp.xp}yp${smp.yp}av01000tm03lm0`);  // ch0+ch1 both get 1000
-    twin.sendCommand(`C0DSid0003xp${smp.xp}yp${smp.yp}dv00400dm0tm02`);  // dispense only ch1
+    twin.sendCommand(`C0ASid0002xp${smp.xp}yp${smp.yp}av01000tm03lm0zp01500th2450`);  // ch0+ch1 both get 1000
+    twin.sendCommand(`C0DSid0003xp${smp.xp}yp${smp.yp}dv00400dm0tm02zp01500th2450`);  // dispense only ch1
     const s = twin.getState();
     const vol = s.modules.pip!.variables.volume as number[];
     expect(vol[0]).toBe(1000);  // ch0 untouched
@@ -69,7 +69,7 @@ describe("Per-channel isolation across tm-masked ops", () => {
       .toEqual([true, true, true, true, true, true, true, true]);
 
     // Eject only ch0 (tm=1) at waste
-    twin.sendCommand(`C0TRid0002tm01`);
+    twin.sendCommand(`C0TRid0002tm01tz1985th2450`);
     const s = twin.getState();
     const fitted = s.modules.pip!.variables.tip_fitted as boolean[];
     expect(fitted[0]).toBe(false);  // ch0 ejected

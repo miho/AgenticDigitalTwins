@@ -74,6 +74,15 @@ export interface ServerSetupOptions {
    * network ports or answer broadcasts.
    */
   venusBridge?: VenusBridgeOptions | null;
+  /**
+   * Pre-built deck. When provided AND no `layoutPath` is set, this deck
+   * is passed to the twin's constructor instead of letting it call
+   * `createDefaultDeckLayout()` (which prefers the baked Method1.lay
+   * from a Hamilton install). Tests use this to pin the predictable-IDs
+   * fallback deck so they don't bind to whatever Hamilton install the
+   * dev machine has on disk.
+   */
+  deck?: Deck;
 }
 
 /**
@@ -142,7 +151,10 @@ export function setupServer(options: ServerSetupOptions = {}): ServerSetup & { v
   const log = options.log ?? ((msg: string) => console.log(msg));
   const api = new DigitalTwinAPI();
 
-  // Optional VENUS layout
+  // Optional VENUS layout. Precedence:
+  //   1. Explicit `layoutPath` — load that .lay.
+  //   2. Caller-supplied `deck` (tests use this to pin the fallback deck).
+  //   3. `undefined` → twin constructor calls createDefaultDeckLayout().
   let deck: Deck | undefined;
   if (options.layoutPath) {
     try {
@@ -154,6 +166,8 @@ export function setupServer(options: ServerSetupOptions = {}): ServerSetup & { v
     } catch (e: any) {
       log(`Failed to load layout: ${e.message}`);
     }
+  } else if (options.deck) {
+    deck = options.deck;
   }
 
   const activeDeviceId = api.createDevice({ name: options.deviceName ?? "STAR Primary", deck });

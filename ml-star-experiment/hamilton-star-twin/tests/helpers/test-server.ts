@@ -21,6 +21,8 @@
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { startHeadlessServer } = require("../../dist/headless/server");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createFallbackDeckLayout } = require("../../dist/twin/deck");
 
 export interface TestServer {
   /** Resolved port the HTTP server is listening on. */
@@ -51,6 +53,13 @@ export interface CreateTestServerOptions {
 export async function createTestServer(
   options: CreateTestServerOptions = {}
 ): Promise<TestServer> {
+  // Pin the predictable-IDs fallback deck (TIP001/SMP001/...) when the
+  // caller didn't request a specific layout. Without this, the headless
+  // server's `setupServer` lets the twin call `createDefaultDeckLayout()`
+  // which prefers the baked Method1.lay from a Hamilton install — those
+  // carrier IDs are auto-generated and don't match what tests assert
+  // against (e.g. `wellXY("SMP001", ...)`).
+  const fallbackDeck = options.layoutPath ? undefined : createFallbackDeckLayout();
   const srv = await startHeadlessServer({
     port: 0, // 0 → OS picks a free port
     staticDir: options.staticDir ?? null,
@@ -58,6 +67,7 @@ export async function createTestServer(
     venusRoot: options.venusRoot,
     tracePath: options.tracePath,
     autoInit: options.autoInit !== false,
+    deck: fallbackDeck,
   });
 
   // Use 127.0.0.1 explicitly — on Windows, `localhost` resolves to ::1

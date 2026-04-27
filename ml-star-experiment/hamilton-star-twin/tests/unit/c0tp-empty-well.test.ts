@@ -37,7 +37,7 @@ describe("C0TP tip-presence detection (TPD)", () => {
     // Eject to waste (not back to the rack, which would re-mark the wells
     // as available under the #14 return-to-rack logic). Firing C0TR with
     // no xp/yp routes to the default waste path.
-    const ej = twin.sendCommand(`C0TRid0102tm255`);
+    const ej = twin.sendCommand(`C0TRid0102tm255tz1985th2450`);
     expect(ej.accepted).toBe(true);
 
     // Second pickup from the SAME column — wells are empty now.
@@ -59,7 +59,7 @@ describe("C0TP tip-presence detection (TPD)", () => {
     expect(first.accepted).toBe(true);
 
     // Eject channel 1's tip to waste (no xp/yp → waste path).
-    twin.sendCommand(`C0TRid0202tm01`);
+    twin.sendCommand(`C0TRid0202tm01tz1985th2450`);
 
     const second = twin.sendCommand(
       `C0TPid0203xp${col1A1.xp}yp${col1A1.yp}tm255tt04tp2264tz2164th2450td1`

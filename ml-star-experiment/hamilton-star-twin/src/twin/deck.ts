@@ -923,11 +923,14 @@ export function createDefaultDeckLayout(): Deck {
 }
 
 /**
- * Hand-coded fallback layout. Used when the baked-in Method1.lay
- * can't be resolved (tests running in unusual cwd, asset dir moved,
- * etc.). Kept so the twin always has *some* populated deck.
+ * Hand-coded fallback layout with predictable carrier IDs (TIP001,
+ * SMP001, DST001, RGT001, TIP002, WASH01, HHS001, TCC001). Used when
+ * the baked-in Method1.lay can't be resolved AND as the deterministic
+ * deck for unit tests — `tests/helpers/in-process.ts` passes this
+ * directly so tests don't accidentally bind to whatever VENUS layout
+ * the dev machine happens to have on disk.
  */
-function createFallbackDeckLayout(): Deck {
+export function createFallbackDeckLayout(): Deck {
   const deck = new Deck("STAR");
 
   // Track 1-6: Tip carrier (1000uL + 300uL tips)

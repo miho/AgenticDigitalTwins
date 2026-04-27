@@ -211,7 +211,7 @@ describe("Phase 4: Deck Completeness", () => {
     it("tipType 5 is accepted for tip pickup", async () => {
       // Pick up 300uL tips (type 5) from TIP002 (which has 300uL tip racks)
       const tipPos = await wellXY("TIP002", 0, 0);
-      const r = await sendCommand(`C0TPid0400xp${tipPos.xp}yp${tipPos.yp}tm1tt05`);
+      const r = await sendCommand(`C0TPid0400xp${tipPos.xp}yp${tipPos.yp}tm1tt05tp2264th2450td1`);
       expect(r.accepted).toBe(true);
 
       const vars = await getModuleVars("pip");

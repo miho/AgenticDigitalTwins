@@ -25,6 +25,8 @@ import type { LiquidContents, ChannelState } from "../../src/twin/liquid-tracker
 // Runtime import from the built dist (SCXML modules only work there).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { DigitalTwinAPI } = require("../../dist/twin/api");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createFallbackDeckLayout } = require("../../dist/twin/deck");
 
 export interface TestTwin {
   /** The device ID used by the underlying API. Hidden from most tests. */
@@ -117,7 +119,12 @@ export interface CreateTestTwinOptions extends Omit<DeviceConfig, "name"> {
 export function createTestTwin(options: CreateTestTwinOptions = {}): TestTwin {
   const { autoInit = true, ...deviceConfig } = options;
   const api = new DigitalTwinAPI();
-  const deviceId = api.createDevice({ name: "TestTwin", ...deviceConfig });
+  // Tests assume the predictable-IDs fallback deck (TIP001, SMP001, …).
+  // createDefaultDeckLayout() now prefers a baked Method1.lay when the
+  // dev machine has a Hamilton install on disk, so unit tests would
+  // otherwise see Hamilton-style auto-generated IDs they don't recognise.
+  const deck = deviceConfig.deck ?? createFallbackDeckLayout();
+  const deviceId = api.createDevice({ name: "TestTwin", ...deviceConfig, deck });
   let eventListenerDisposers: Array<() => void> = [];
 
   const sendCommand = (raw: string): CommandResult => api.sendCommand(deviceId, raw);

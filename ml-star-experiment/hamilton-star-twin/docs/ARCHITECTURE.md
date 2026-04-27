@@ -2,7 +2,7 @@
 
 **A firmware-faithful, state-machine-driven digital twin with a shared datamodel between simulation, visualization, and AI-agent introspection.**
 
-> Status snapshot: 2026-04-20 · master @ `snapshot-20260419-2346` · 427 unit tests + 12 fw-integration tests on CI · 236 firmware commands across 10 SCXML modules · 33 high-level step types · VENUS 6.0.2 drives the twin end-to-end.
+> Status snapshot: 2026-04-27 · 448 unit tests + 12 fw-integration tests · 236 firmware commands across 10 SCXML modules · 33 high-level step types · VENUS 6.0.2 drives the twin end-to-end. Latest cycle (`43be525`) added global sim-speed / Fast-Init settings, CNC retract → travel → descend motion, per-channel Y/Z spread, Hamilton Z convention enforcement, tip-type geometry on the labware catalog, and strict FW Z-param validation.
 
 ---
 
@@ -265,6 +265,12 @@ interface MotionEnvelope {
   endX: number;   endY: number;
   startZ?: number; endZ?: number;
   dwellZ?: number;          // For C0AS/C0DS Z-bob: descend → hold → retract
+  traverseZ?: number;       // CNC safe travel height — arm retracts here for XY
+  startY_ch?: number[];     // Per-channel Y (PIP only) — channels diverge with masked C0AS
+  endY_ch?:   number[];
+  startZ_ch?: number[];     // Per-channel Z (PIP only) — engaged channels descend independently
+  endZ_ch?:   number[];
+  dwellZ_ch?: number[];
   startRotation?: number; endRotation?: number;
   startGripWidth?: number; endGripWidth?: number;
   startTime: number;        // Date.now() at emit
@@ -274,6 +280,28 @@ interface MotionEnvelope {
 ```
 
 Everything temporal is derived from this envelope.
+
+### CNC retract → travel → descend
+
+A motion that crosses XY is never linear. The renderer animates a
+five-phase profile through `sampleZFromPhases`: dwell-up → retract to
+`traverseZ` → XY travel at the retracted height → descend to `endZ` →
+dwell-down. Phase boundaries come from `computePhaseBoundaries`
+**partitioning physical distance** at nominal STAR speeds (Z = 300 mm/s,
+XY = 800 mm/s) with a 40 ms floor per phase. A 200 mm Z descent gets
+time proportional to its travel — no fixed 15% phase fractions that
+collapse big deltas to a snap.
+
+### Hamilton Z convention
+
+`pos_z` measures **height above the deck** in 0.1 mm. Bigger = higher
+= safer (more retracted). Smaller = lower (closer to deck or inside a
+well). All derived FW params (`tp`, `th`, `tz`, `zp`) follow the same
+convention. `safeTravelZ = min(start, end, 0)` returns the most
+retracted height; `armZFromArray` returns `min(pos_z[])` for "deepest
+channel" (lowest = most extended). Verified against
+`well-geometry.simulateLLD` (`tipZ_01mm <= liquidSurfaceAbsolute` for
+detection) and real-trace values from `pip-command-catalog`.
 
 ### The state-commits-on-motion-end principle
 
@@ -341,6 +369,13 @@ Validation is where the twin refuses. Assessment is where the twin tells you wha
 ### Why the split matters
 
 A real instrument fails hard on some things (tip mask conflict — error 07) and reports soft observations on others (TADM curve looks odd, but the aspirate completed). Conflating them produces simulators that either refuse too much ("too fussy to run real methods") or refuse too little ("method ran but dispensed air into three wells silently").
+
+The bias is **toward refusal when the FW spec says refuse**. Strict
+Z-param validation: a `C0TP` without `tp`/`th`, a `C0AS` / `C0DS`
+without `zp` (and no LLD search), a `C0TR` without `tz`/`th` — all
+error with code 3, just like real STAR firmware. A customer's software
+that's missing a required Z param will fail on the simulator instead
+of fooling its way through CI and crashing on real hardware.
 
 - `empty_aspiration` — warning, not rejection. Aspirating from an empty well is physically valid; you just draw air.
 - `volume_underflow` — warning. Requested 100 µL, got 10 µL liquid + 90 µL air.

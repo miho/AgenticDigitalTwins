@@ -102,7 +102,7 @@ describe("Phase 0: Foundation Fixes", () => {
     it("tip type 4 (1000uL high volume) uses 10000 correction entry", async () => {
       // Pick up tips (type 4 = 1000uL)
       const tipPos = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0040xp${tipPos.xp}yp${tipPos.yp}tm1tt04`);
+      await sendCommand(`C0TPid0040xp${tipPos.xp}yp${tipPos.yp}tm1tt04tp2264th2450td1`);
 
       const vars = await getModuleVars("pip");
       expect(vars.tip_type[0]).toBe(4);
@@ -115,7 +115,7 @@ describe("Phase 0: Foundation Fixes", () => {
       const volBefore = await getWellVolume("SMP001", 0, 0);
       expect(volBefore).toBe(2000);
 
-      const r = await sendCommand(`C0ASid0041tm1xp${aspPos.xp}yp${aspPos.yp}av01000as2500ta050ba0400lm0wt05`);
+      const r = await sendCommand(`C0ASid0041tm1xp${aspPos.xp}yp${aspPos.yp}av01000as2500ta050ba0400lm0wt05zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
 
@@ -138,7 +138,7 @@ describe("Phase 0: Foundation Fixes", () => {
     it("tip type 5 (300uL standard) uses 3000 correction entry", async () => {
       // Pick up tips with type 5 = 300uL
       const tipPos = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0050xp${tipPos.xp}yp${tipPos.yp}tm1tt05`);
+      await sendCommand(`C0TPid0050xp${tipPos.xp}yp${tipPos.yp}tm1tt05tp2264th2450td1`);
 
       const vars = await getModuleVars("pip");
       expect(vars.tip_type[0]).toBe(5);
@@ -197,7 +197,7 @@ describe("Phase 0: Foundation Fixes", () => {
     it("C0TP timing is 2000-10000ms range (real: 7-9s)", async () => {
       // Tip pickup timing estimate should be in realistic range
       const tipPos = await wellXY("TIP001", 0, 0);
-      const t = await timing(`C0TPid0080xp${tipPos.xp}yp${tipPos.yp}tm1tt04`);
+      const t = await timing(`C0TPid0080xp${tipPos.xp}yp${tipPos.yp}tm1tt04tp2264th2450td1`);
 
       // Real trace: 7-9s. Our model includes X travel + Z descent + grip + Z retract.
       // Minimum: Z down + grip + Z up ≈ 2s. With X travel: 3-8s.
@@ -208,10 +208,10 @@ describe("Phase 0: Foundation Fixes", () => {
     it("C0TR timing includes X travel to waste (real: 7-8s)", async () => {
       // Pick up tips first
       const tipPos = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0090xp${tipPos.xp}yp${tipPos.yp}tm1tt04`);
+      await sendCommand(`C0TPid0090xp${tipPos.xp}yp${tipPos.yp}tm1tt04tp2264th2450td1`);
 
       // Tip eject to waste — includes X travel to waste position
-      const t = await timing("C0TRid0091xp13000yp03000tm1");
+      const t = await timing("C0TRid0091xp13000yp03000tm1tz1985th2450");
       expect(t.estimatedTimeMs).toBeGreaterThan(1000);
       expect(t.estimatedTimeMs).toBeLessThan(12000);
     });
@@ -231,16 +231,16 @@ describe("Phase 0: Foundation Fixes", () => {
     });
 
     it("C0AS timing scales with volume", async () => {
-      const t1 = await timing("C0ASid0120av00100as2500");  // 10uL
-      const t2 = await timing("C0ASid0121av10000as2500");  // 1000uL
+      const t1 = await timing("C0ASid0120av00100as2500zp01500th2450");  // 10uL
+      const t2 = await timing("C0ASid0121av10000as2500zp01500th2450");  // 1000uL
 
       // Larger volume should take longer (pipetting phase dominates)
       expect(t2.estimatedTimeMs).toBeGreaterThan(t1.estimatedTimeMs);
     });
 
     it("C0AS timing includes settle time from wt param", async () => {
-      const t1 = await timing("C0ASid0130av01000as2500wt05");   // wt=5 = 0.5s settle
-      const t2 = await timing("C0ASid0131av01000as2500wt50");   // wt=50 = 5.0s settle
+      const t1 = await timing("C0ASid0130av01000as2500wt05zp01500th2450");   // wt=5 = 0.5s settle
+      const t2 = await timing("C0ASid0131av01000as2500wt50zp01500th2450");   // wt=50 = 5.0s settle
 
       // Higher settle time should produce longer estimate
       expect(t2.estimatedTimeMs).toBeGreaterThan(t1.estimatedTimeMs);
@@ -256,9 +256,9 @@ describe("Phase 0: Foundation Fixes", () => {
       // This is tested indirectly: if the default LC resolves, aspirate works
       await fillPlate("SMP001", 0, "Water", 2000);
       const tipPos = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0200xp${tipPos.xp}yp${tipPos.yp}tm1tt04`);
+      await sendCommand(`C0TPid0200xp${tipPos.xp}yp${tipPos.yp}tm1tt04tp2264th2450td1`);
       const aspPos = await wellXY("SMP001", 0, 0);
-      const r = await sendCommand(`C0ASid0201tm1xp${aspPos.xp}yp${aspPos.yp}av01000as2500ta050ba0400lm0wt05`);
+      const r = await sendCommand(`C0ASid0201tm1xp${aspPos.xp}yp${aspPos.yp}av01000as2500ta050ba0400lm0wt05zp01500th2450`);
       expect(r.accepted).toBe(true);
     });
 

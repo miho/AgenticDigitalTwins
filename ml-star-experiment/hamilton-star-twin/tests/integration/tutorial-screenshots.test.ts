@@ -452,11 +452,11 @@ describe("Tutorial screenshots (light theme)", () => {
     // different column (col 2 at xp=112.3 mm). Step 06 consumed TIP001
     // column 1; the tip-presence-detection plugin otherwise reports
     // er75 "no tip at well already used".
-    const ejectResp = await exec("C0TRid0900tm255");
+    const ejectResp = await exec("C0TRid0900tm255tz1985th2450");
     await waitForMotionsToSettle();
     const pickupResp = await exec("C0TPid0901xp01123yp01475tm255tt04tp2264tz2164th2450td1");
     await waitForMotionsToSettle();
-    await exec("C0ASid0902xp02383yp01460av00800tm255lm0");
+    await exec("C0ASid0902xp02383yp01460av00800tm255lm0zp01500th2450");
     await waitForMotionsToSettle();
 
     const pip = (await fetchState()).modules.pip.variables;

@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createDefaultDeckLayout } = require("../../dist/twin/deck");
+const { createFallbackDeckLayout: createDefaultDeckLayout } = require("../../dist/twin/deck");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { DeckTracker } = require("../../dist/twin/deck-tracker");
 

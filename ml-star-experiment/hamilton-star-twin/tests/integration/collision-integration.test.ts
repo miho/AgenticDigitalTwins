@@ -42,7 +42,7 @@ describe("CollisionPhysics integration", () => {
     const tip = twin.wellXY("TIP001", 0, 0);
 
     // C0TP at the tip rack with a z below the carrier top → collision.
-    twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}zp1500tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}zp1500tm255tt04tp2264th2450td1`);
 
     const allAssessments = twin.getAssessments();
     const hits = allAssessments.filter((a: any) => a.category === "collision");

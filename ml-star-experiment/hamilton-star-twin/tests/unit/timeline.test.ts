@@ -180,12 +180,12 @@ describe("EventSpine (Step 1.10)", () => {
     it("an aspirate-at-unresolved command adds both assessment and command events", () => {
       twin = createTestTwin();
       const tipPos = twin.wellXY("TIP001", 0, 0);
-      twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+      twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
 
       const internal = getInternalTwin(twin.api, twin.deviceId);
       const spine = internal.getEventSpine();
 
-      const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0");
+      const r = twin.sendCommand("C0ASid0201xp00000yp00000av01000tm255lm0zp01500th2450");
       const related = spine.getByCorrelation(r.correlationId);
       const kinds = new Set(related.map((e: any) => e.kind));
       expect(kinds.has("assessment")).toBe(true);
@@ -198,7 +198,7 @@ describe("EventSpine (Step 1.10)", () => {
       const spine = internal.getEventSpine();
 
       const tipPos = twin.wellXY("TIP001", 0, 0);
-      const r = twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+      const r = twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
       const interactions = spine
         .getByCorrelation(r.correlationId)
         .filter((e: any) => e.kind === "deck_interaction");

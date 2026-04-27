@@ -579,11 +579,11 @@ describe("Phase 2: Z-Height Physics", () => {
       // Verify that the raw command path still works when zp is present
       await fillPlate("SMP001", 0, "Water", 2000);
       const tipPos = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0500xp${tipPos.xp}yp${tipPos.yp}tm1tt04`);
+      await sendCommand(`C0TPid0500xp${tipPos.xp}yp${tipPos.yp}tm1tt04tp2264th2450td1`);
 
       const aspPos = await wellXY("SMP001", 0, 0);
       // Send raw command with zp parameter
-      const r = await sendCommand(`C0ASid0501tm1xp${aspPos.xp}yp${aspPos.yp}zp00080av01000as2500ta050ba0400lm0wt05`);
+      const r = await sendCommand(`C0ASid0501tm1xp${aspPos.xp}yp${aspPos.yp}zp00080av01000as2500ta050ba0400lm0wt05zp01500th2450`);
       expect(r.accepted).toBe(true);
     });
   });

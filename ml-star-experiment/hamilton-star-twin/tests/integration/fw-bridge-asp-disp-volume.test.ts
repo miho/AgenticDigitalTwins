@@ -115,9 +115,9 @@ describe("FW bridge → wellVolumes update (VENUS-driven asp/disp)", () => {
       "C0DIid0002",
       "C0EIid0003",
       "C0IIid0004",
-      "C0TPid0010xp01180yp05298tm1tt04",          // tip pickup at SiteId 1 of tip rack
-      "C0ASid0011xp02756yp05300av03000tm1lm0",    // aspirate 300 µL from PLT pos 0 A1
-      "C0DSid0012xp02756yp01460dv03000tm1dm2",    // dispense 300 µL into PLT pos 4 A1
+      "C0TPid0010xp01180yp05298tm1tt04tp2264th2450td1",          // tip pickup at SiteId 1 of tip rack
+      "C0ASid0011xp02756yp05300av03000tm1lm0zp01500th2450",    // aspirate 300 µL from PLT pos 0 A1
+      "C0DSid0012xp02756yp01460dv03000tm1dm2zp01500th2450",    // dispense 300 µL into PLT pos 4 A1
     ]);
 
     const after = twin.api.getDeckTracking(twin.deviceId);
@@ -144,7 +144,7 @@ describe("FW bridge → wellVolumes update (VENUS-driven asp/disp)", () => {
     // but our pip SCXML rejects C0AS when no tip is fitted — exposing the
     // "no deck update when command silently drops" path.
     await connectAndSend(server.port, [
-      "C0ASid0021xp02756yp05300av03000tm1lm0",
+      "C0ASid0021xp02756yp05300av03000tm1lm0zp01500th2450",
     ]);
 
     // Volume unchanged because SCXML rejected (no tip) — verify our log

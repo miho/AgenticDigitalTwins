@@ -33,9 +33,9 @@ describe("Spatial event annotations", () => {
   it("renders a crosshair when an unresolved-position assessment fires", async () => {
     setTestName("annotation-unresolved");
     // Pickup tips so a subsequent aspirate isn't rejected for missing tip.
-    await sendCmd("C0TPid0001xp01033yp01475tm255tt04");
+    await sendCmd("C0TPid0001xp01033yp01475tm255tt04tp2264th2450td1");
     // Aspirate at origin (0,0) — not resolvable to deck → unresolved assessment.
-    await sendCmd("C0ASid0002xp00000yp00000av01000tm255lm0");
+    await sendCmd("C0ASid0002xp00000yp00000av01000tm255lm0zp01500th2450");
     await getPage().waitForTimeout(300);
 
     await screenshotDeck("unresolved", "Unresolved aspirate produces a crosshair marker");

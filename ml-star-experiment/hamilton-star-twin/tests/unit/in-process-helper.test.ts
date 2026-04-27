@@ -40,7 +40,7 @@ describe("createTestTwin", () => {
   it("sendCommand executes synchronously and returns a CommandResult", () => {
     twin = createTestTwin();
     const pos = twin.wellXY("TIP001", 0, 0);
-    const r = twin.sendCommand(`C0TPid0001xp${pos.xp}yp${pos.yp}tm255tt04`);
+    const r = twin.sendCommand(`C0TPid0001xp${pos.xp}yp${pos.yp}tm255tt04tp2264th2450td1`);
     expect(r.accepted).toBe(true);
     expect(r.errorCode).toBe(0);
     // Physical outcome: 8 tips fitted in PIP
@@ -65,10 +65,10 @@ describe("createTestTwin", () => {
     const tip = twin.wellXY("TIP001", 0, 0);
     const src = twin.wellXY("SMP001", 0, 0);
 
-    twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
     const volBefore = twin.getColumnVolumes("SMP001", 0, 0);
 
-    const r = twin.sendCommand(`C0ASid0101xp${src.xp}yp${src.yp}av01000tm255lm0`);
+    const r = twin.sendCommand(`C0ASid0101xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
     expect(r.accepted).toBe(true);
     expect(r.errorCode).toBe(0);
 

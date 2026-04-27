@@ -98,7 +98,7 @@ describe("Twin server", () => {
   describe("3-4. Tip Pickup", () => {
     it("picks up 8 tips with tm=255", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const result = await sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04`);
+      const result = await sendCommand(`C0TPid0100xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       expect(result.accepted).toBe(true);
       expect(result.errorCode).toBe(0);
 
@@ -111,7 +111,7 @@ describe("Twin server", () => {
 
     it("picks up 4 tips with tm=15 (channels 1-4)", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      const result = await sendCommand(`C0TPid0101xp${tip.xp}yp${tip.yp}tm15tt04`);
+      const result = await sendCommand(`C0TPid0101xp${tip.xp}yp${tip.yp}tm15tt04tp2264th2450td1`);
       expect(result.accepted).toBe(true);
 
       const pip = await getModuleVars("pip");
@@ -126,7 +126,7 @@ describe("Twin server", () => {
 
     it("tracks used tips in tracking data", async () => {
       const tip = await wellXY("TIP001", 0, 0);
-      await sendCommand(`C0TPid0102xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0102xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       const tracking = await getTracking();
       // Column 0 of TIP001: wells 0, 12, 24, ... 84
       for (let row = 0; row < 8; row++) {
@@ -139,7 +139,7 @@ describe("Twin server", () => {
       const volBefore = await getColumnVolumes("SMP001", 0, 0);
 
       const src = await wellXY("SMP001", 0, 0);
-      const result = await sendCommand(`C0ASid0103xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      const result = await sendCommand(`C0ASid0103xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
 
       // Pin the specific error code — "no tip fitted" (8). A regression that
       // changed the rejection reason would slip through `> 0`.
@@ -162,14 +162,14 @@ describe("Twin server", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_A", 2000);
-      await sendCommand(`C0TPid0200xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0200xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
     });
 
     it("aspirates 100uL from 8 wells — channels loaded AND sources depleted", async () => {
       const src = await wellXY("SMP001", 0, 0);
       const volBefore = await getColumnVolumes("SMP001", 0, 0);
 
-      const result = await sendCommand(`C0ASid0201xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      const result = await sendCommand(`C0ASid0201xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       expect(result.accepted).toBe(true);
       expect(result.errorCode).toBe(0);
 
@@ -189,7 +189,7 @@ describe("Twin server", () => {
 
     it("decreases source well volume", async () => {
       const src = await wellXY("SMP001", 0, 0);
-      await sendCommand(`C0ASid0202xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0ASid0202xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
 
       // Column 0 wells: 2000 - 1000 = 1000
       const vols = await getColumnVolumes("SMP001", 0, 0);
@@ -202,7 +202,7 @@ describe("Twin server", () => {
 
     it("generates TADM assessment event", async () => {
       const src = await wellXY("SMP001", 0, 0);
-      await sendCommand(`C0ASid0203xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0ASid0203xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
       const events = await getAssessments();
       const tadm = events.filter((e: any) => e.category === "tadm" && e.command === "C0AS");
       expect(tadm.length).toBeGreaterThan(0);
@@ -218,13 +218,13 @@ describe("Twin server", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_A", 2000);
-      await sendCommand(`C0TPid0300xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0301xp${src.xp}yp${src.yp}av01000tm255lm0`);
+      await sendCommand(`C0TPid0300xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0301xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
     });
 
     it("dispenses to destination plate", async () => {
       const dst = await wellXY("DST001", 0, 0);
-      const result = await sendCommand(`C0DSid0302xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      const result = await sendCommand(`C0DSid0302xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       expect(result.accepted).toBe(true);
 
       const pip = await getModuleVars("pip");
@@ -235,14 +235,14 @@ describe("Twin server", () => {
 
     it("increases destination well volume", async () => {
       const dst = await wellXY("DST001", 0, 0);
-      await sendCommand(`C0DSid0303xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      await sendCommand(`C0DSid0303xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       const vols = await getColumnVolumes("DST001", 0, 0);
       expect(vols).toEqual([1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]);
     });
 
     it("generates TADM dispense event", async () => {
       const dst = await wellXY("DST001", 0, 0);
-      await sendCommand(`C0DSid0304xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      await sendCommand(`C0DSid0304xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       const events = await getAssessments();
       const tadm = events.filter((e: any) => e.category === "tadm" && e.command === "C0DS");
       expect(tadm.length).toBeGreaterThan(0);
@@ -259,10 +259,10 @@ describe("Twin server", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_A", 2000);
-      await sendCommand(`C0TPid0400xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0401xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      await sendCommand(`C0DSid0402xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
-      await sendCommand("C0TRid0403tm255");
+      await sendCommand(`C0TPid0400xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0401xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      await sendCommand(`C0DSid0402xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
+      await sendCommand("C0TRid0403tm255tz1985th2450");
 
       const srcVols = await getColumnVolumes("SMP001", 0, 0);
       const dstVols = await getColumnVolumes("DST001", 0, 0);
@@ -278,10 +278,10 @@ describe("Twin server", () => {
       const dstC1 = await wellXY("DST001", 0, 1);
       await fillPlate("SMP001", 0, "Sample_A", 2000);
       // tipC1 = TIP001 col 1, srcC1 = SMP001 col 1, dstC1 = DST001 col 1
-      await sendCommand(`C0TPid0410xp${tipC1.xp}yp${tipC1.yp}tm15tt04`);
-      await sendCommand(`C0ASid0411xp${srcC1.xp}yp${srcC1.yp}av01000tm15lm0`);
-      await sendCommand(`C0DSid0412xp${dstC1.xp}yp${dstC1.yp}dv01000dm0tm15`);
-      await sendCommand("C0TRid0413tm15");
+      await sendCommand(`C0TPid0410xp${tipC1.xp}yp${tipC1.yp}tm15tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0411xp${srcC1.xp}yp${srcC1.yp}av01000tm15lm0zp01500th2450`);
+      await sendCommand(`C0DSid0412xp${dstC1.xp}yp${dstC1.yp}dv01000dm0tm15zp01500th2450`);
+      await sendCommand("C0TRid0413tm15tz1985th2450");
 
       const srcVols = await getColumnVolumes("SMP001", 0, 1);
       const dstVols = await getColumnVolumes("DST001", 0, 1);
@@ -310,7 +310,7 @@ describe("Twin server", () => {
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_B", 2000);
       // tm=240 = channels 5-8 (bits 4,5,6,7)
-      const r1 = await sendCommand(`C0TPid0450xp${tip.xp}yp${tip.yp}tm240tt04`);
+      const r1 = await sendCommand(`C0TPid0450xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
       expect(r1.accepted).toBe(true);
       expect(r1.errorCode).toBe(0);
 
@@ -326,7 +326,7 @@ describe("Twin server", () => {
       expect(pip.active_tip_count).toBe(4);
 
       // Aspirate 100uL from source plate
-      const r2 = await sendCommand(`C0ASid0451xp${src.xp}yp${src.yp}av01000tm240lm0`);
+      const r2 = await sendCommand(`C0ASid0451xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`);
       expect(r2.accepted).toBe(true);
       expect(r2.errorCode).toBe(0);
 
@@ -350,7 +350,7 @@ describe("Twin server", () => {
       expect(srcVols[1]).toBe(2000);
 
       // Dispense to destination
-      const r3 = await sendCommand(`C0DSid0452xp${dst.xp}yp${dst.yp}dv01000dm0tm240`);
+      const r3 = await sendCommand(`C0DSid0452xp${dst.xp}yp${dst.yp}dv01000dm0tm240zp01500th2450`);
       expect(r3.accepted).toBe(true);
       expect(r3.errorCode).toBe(0);
 
@@ -369,7 +369,7 @@ describe("Twin server", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_C", 2000);
-      const r1 = await sendCommand(`C0TPid0460xp${tip.xp}yp${tip.yp}tm1tt04`);
+      const r1 = await sendCommand(`C0TPid0460xp${tip.xp}yp${tip.yp}tm1tt04tp2264th2450td1`);
       expect(r1.accepted).toBe(true);
 
       const pip = await getModuleVars("pip");
@@ -377,7 +377,7 @@ describe("Twin server", () => {
       expect(pip.tip_fitted[1]).toBe(false);
       expect(pip.active_tip_count).toBe(1);
 
-      const r2 = await sendCommand(`C0ASid0461xp${src.xp}yp${src.yp}av01000tm1lm0`);
+      const r2 = await sendCommand(`C0ASid0461xp${src.xp}yp${src.yp}av01000tm1lm0zp01500th2450`);
       expect(r2.accepted).toBe(true);
 
       const srcVols = await getColumnVolumes("SMP001", 0, 0);
@@ -389,7 +389,7 @@ describe("Twin server", () => {
       const tip = await wellXY("TIP001", 0, 0);
       const src = await wellXY("SMP001", 0, 0);
       // Pick up tips only on channels 5-8
-      await sendCommand(`C0TPid0470xp${tip.xp}yp${tip.yp}tm240tt04`);
+      await sendCommand(`C0TPid0470xp${tip.xp}yp${tip.yp}tm240tt04tp2264th2450td1`);
       const pip = await getModuleVars("pip");
       // Verify that hasTip logic works: channel 0 has no tip, but SOME channels do
       expect(pip.tip_fitted[0]).toBe(false);
@@ -398,7 +398,7 @@ describe("Twin server", () => {
 
       // Aspirate should succeed (SCXML uses tip_fitted, not tm)
       await fillPlate("SMP001", 0, "Sample_D", 2000);
-      const r = await sendCommand(`C0ASid0471xp${src.xp}yp${src.yp}av01000tm240lm0`);
+      const r = await sendCommand(`C0ASid0471xp${src.xp}yp${src.yp}av01000tm240lm0zp01500th2450`);
       expect(r.accepted).toBe(true);
       expect(r.errorCode).toBe(0);
     });
@@ -552,9 +552,9 @@ describe("Twin server", () => {
     it("rejects dispense with no volume", async () => {
       const tip = await wellXY("TIP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
-      await sendCommand(`C0TPid0800xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0800xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       // Dispense without prior aspirate
-      const r = await sendCommand(`C0DSid0801xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
+      const r = await sendCommand(`C0DSid0801xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
       // The SCXML accepts it (jet dispense from tips_empty → tips_empty),
       // but the volume is 0 so nothing transfers
       const pip = await getModuleVars("pip");
@@ -564,10 +564,10 @@ describe("Twin server", () => {
     it("rejects tip pickup when tips already fitted", async () => {
       const tip = await wellXY("TIP001", 0, 0);
       const tipC1 = await wellXY("TIP001", 0, 1);
-      await sendCommand(`C0TPid0810xp${tip.xp}yp${tip.yp}tm255tt04`);
+      await sendCommand(`C0TPid0810xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
       // Wait for move.done so PIP returns to tip_fitted idle
       await flush("move.done");
-      const r = await sendCommand(`C0TPid0811xp${tipC1.xp}yp${tipC1.yp}tm255tt04`);
+      const r = await sendCommand(`C0TPid0811xp${tipC1.xp}yp${tipC1.yp}tm255tt04tp2264th2450td1`);
       // Error 7 = "tip already fitted" (distinct from 8 = "no tip"). Pinning
       // the code catches a regression that confuses the two.
       expect(r.errorCode).toBe(7);
@@ -578,10 +578,10 @@ describe("Twin server", () => {
       const src = await wellXY("SMP001", 0, 0);
       const dst = await wellXY("DST001", 0, 0);
       await fillPlate("SMP001", 0, "Sample_A", 2000);
-      await sendCommand(`C0TPid0820xp${tip.xp}yp${tip.yp}tm255tt04`);
-      await sendCommand(`C0ASid0821xp${src.xp}yp${src.yp}av01000tm255lm0`);
-      await sendCommand(`C0DSid0822xp${dst.xp}yp${dst.yp}dv01000dm0tm255`);
-      await sendCommand("C0TRid0823tm255");
+      await sendCommand(`C0TPid0820xp${tip.xp}yp${tip.yp}tm255tt04tp2264th2450td1`);
+      await sendCommand(`C0ASid0821xp${src.xp}yp${src.yp}av01000tm255lm0zp01500th2450`);
+      await sendCommand(`C0DSid0822xp${dst.xp}yp${dst.yp}dv01000dm0tm255zp01500th2450`);
+      await sendCommand("C0TRid0823tm255tz1985th2450");
 
       const state = await getState();
       for (const [id, mod] of Object.entries(state.modules) as [string, any][]) {

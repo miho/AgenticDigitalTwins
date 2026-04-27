@@ -128,7 +128,7 @@ describe("Inspector liquid preview + coordinate-only resolution", () => {
       // matching works — pure carrier-rect matching wouldn't care,
       // but our well-by-well matcher should still find A1.
       const nudgedY = smpA1Y + 20;
-      await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: `C0ASid0004xp${pad5(smpA1X)}yp${pad5(nudgedY)}av00500tm255lm0` }) });
+      await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: `C0ASid0004xp${pad5(smpA1X)}yp${pad5(nudgedY)}av00500tm255lm0zp01500th2450` }) });
       // Poll /tracking until the well volume actually drops (the
       // aspirate has a physics-driven delay that exceeds a single
       // fixed sleep).
@@ -191,7 +191,7 @@ describe("Inspector liquid preview + coordinate-only resolution", () => {
       // plate; that's been corrected.
       const preTrack = await (await fetch("/tracking")).json() as any;
       const preVol = preTrack.wellVolumes["PLT_CAR_L5AC_A00_0001:0:0"] ?? 0;
-      await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: "C0ASid0004xp02755yp05300av00500tm255lm0" }) });
+      await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: "C0ASid0004xp02755yp05300av00500tm255lm0zp01500th2450" }) });
       // Aspirate's physics `_delay` (Z-traverse + Y-travel + pump time)
       // can run 500 ms-plus; poll /tracking until the well volume
       // reflects the draw rather than racing a fixed sleep.

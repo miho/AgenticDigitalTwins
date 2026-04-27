@@ -65,8 +65,8 @@ describe("DigitalTwin snapshot / restore / clone", () => {
     twin.fillPlate("SMP001", 0, "Water", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
 
     // Snapshot a mid-work state
     const dt = (twin.api as any).devices.get(twin.deviceId).twin;
@@ -90,7 +90,7 @@ describe("DigitalTwin snapshot / restore / clone", () => {
 
     // Mutate the twin to diverge from the snapshot
     const tipPos = twin.wellXY("TIP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
     expect(twin.getModuleVars("pip").tip_fitted.slice(0, 8)).toContain(true);
 
     // Restore the idle snapshot — tips should no longer be fitted
@@ -138,8 +138,8 @@ describe("DigitalTwin snapshot / restore / clone", () => {
     twin.fillPlate("SMP001", 0, "Water", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
 
     const dt = (twin.api as any).devices.get(twin.deviceId).twin;
     const clone = dt.clone();
@@ -147,7 +147,7 @@ describe("DigitalTwin snapshot / restore / clone", () => {
     const origVolsBefore = twin.getColumnVolumes("SMP001", 0, 0);
     // Dispense on the clone only
     const dstPos = twin.wellXY("DST001", 0, 0);
-    const cloneResult = clone.sendCommand(`C0DSid0200xp${dstPos.xp}yp${dstPos.yp}dv00500dm0tm255`);
+    const cloneResult = clone.sendCommand(`C0DSid0200xp${dstPos.xp}yp${dstPos.yp}dv00500dm0tm255zp01500th2450`);
     expect(cloneResult.accepted).toBe(true);
 
     // Original unaffected
@@ -170,8 +170,8 @@ describe("DigitalTwin snapshot / restore / clone", () => {
     twin.fillPlate("SMP001", 0, "Water", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
 
     const dt = (twin.api as any).devices.get(twin.deviceId).twin;
     const snap = dt.snapshot();
@@ -192,8 +192,8 @@ describe("DigitalTwin snapshot / restore / clone", () => {
     twin.fillPlate("SMP001", 0, "Sample_A", 2000);
     const tipPos = twin.wellXY("TIP001", 0, 0);
     const srcPos = twin.wellXY("SMP001", 0, 0);
-    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04`);
-    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0`);
+    twin.sendCommand(`C0TPid0100xp${tipPos.xp}yp${tipPos.yp}tm255tt04tp2264th2450td1`);
+    twin.sendCommand(`C0ASid0101xp${srcPos.xp}yp${srcPos.yp}av01000tm255lm0zp01500th2450`);
 
     const dt = (twin.api as any).devices.get(twin.deviceId).twin;
     const snap = JSON.parse(JSON.stringify(dt.snapshot()));

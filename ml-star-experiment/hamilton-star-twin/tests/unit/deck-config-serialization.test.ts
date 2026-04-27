@@ -18,7 +18,7 @@
 import { describe, it, expect } from "vitest";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Deck, createDefaultDeckLayout } = require("../../dist/twin/deck");
+const { Deck, createFallbackDeckLayout: createDefaultDeckLayout } = require("../../dist/twin/deck");
 
 describe("Deck config serialization", () => {
   it("a fresh Deck exports an empty config with only platform + tip waste", () => {
