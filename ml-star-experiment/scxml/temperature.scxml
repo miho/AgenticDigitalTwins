@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="off" name="HamiltonSTAR_Temperature">
+  <datamodel>
+    <data id="target_temp_01c" expr="0"/>
+    <data id="current_temp_01c" expr="220"/>
+    <data id="zone" expr="1"/>
+    <data id="temp_min" expr="0"/>
+    <data id="temp_max" expr="700"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="off" editor:x="1269" editor:y="153.02" editor:width="125" editor:height="75" editor:label="off" editor:color="#2a2a3c" editor:zIndex="0">
+    <transition target="heating" event="C0HI" cond="_event.data.hi===undefined||(_event.data.hi&gt;=temp_min&amp;&amp;_event.data.hi&lt;=temp_max)" editor:waypoints="1224,198.02;1224,200.02" editor:labelAnchor="0,-501,-20" editor:id="t_01KP5AKN2E49HMC67NR7B1NF9K">
+      <assign location="target_temp_01c" expr="_event.data.hi||0"/>
+      <assign location="zone" expr="_event.data.hn||1"/>
+      <log expr="'Set temp '+(_event.data.hi||0)+' (0.1C) zone '+(_event.data.hn||1)" label="FW"/>
+    </transition>
+    <transition target="error_temp" event="C0HI" cond="_event.data.hi!==undefined&amp;&amp;(_event.data.hi&lt;temp_min||_event.data.hi&gt;temp_max)" editor:waypoints="2046,178.02;2046,184.02" editor:labelAnchor="0,-42.398779169769114,-16" editor:id="t_01KP5AKN2E0FBAS62MJSKYSYSR">
+      <assign location="last_error" expr="19"/>
+      <log expr="'Temp '+_event.data.hi+' out of range ['+temp_min+','+temp_max+'] (error 19)'" label="ERROR"/>
+    </transition>
+    <transition target="at_temperature" event="C0HC" cond="_event.data.hc===undefined||(_event.data.hc&gt;=temp_min&amp;&amp;_event.data.hc&lt;=temp_max)" editor:waypoints="1269,168.02;1269,99.02000000000001" editor:labelAnchor="1,-398.51723148685835,-7.304719463001646" editor:id="t_01KP5AKN2EVEYCXSWHBFAMHNP3">
+      <assign location="target_temp_01c" expr="_event.data.hc||0"/>
+      <assign location="zone" expr="_event.data.hn||1"/>
+      <log expr="'Set temp (wait) '+(_event.data.hc||0)+' zone '+(_event.data.hn||1)" label="FW"/>
+    </transition>
+    <transition target="off" event="C0RP" editor:waypoints="1310.6666666666667,143.02;1352.3333333333333,143.02" editor:id="t_01KP5AKN2E105QGCJA1ZS8YBSF">
+      <log expr="'Query temp: '+current_temp_01c+' (0.1C)'" label="FW"/>
+    </transition>
+  </state>
+  <state id="heating" editor:x="12" editor:y="162.02" editor:width="150" editor:height="75" editor:label="heating" editor:color="#2a2a3c" editor:zIndex="1">
+    <onentry>
+      <send event="temp.reached" delayexpr="_event.data._delay || '5000ms'" id="temp_heat_timer"/>
+      <log expr="'Heating to '+target_temp_01c+' (0.1C)'" label="FW"/>
+    </onentry>
+    <transition target="at_temperature" event="temp.reached" editor:waypoints="207,175.02;207,99.02000000000001" editor:id="t_01KP5AKN2E8DK0D2FBWCHGKZDH"/>
+    <transition target="heating" event="C0HI" editor:waypoints="72,152.02;102,152.02" editor:labelAnchor="0,36.90157318785224,-19" editor:id="t_01KP5AKN2EG78AZKJVDKT9BWMN">
+      <assign location="target_temp_01c" expr="_event.data.hi||target_temp_01c"/>
+      <log expr="'Change target to '+target_temp_01c" label="FW"/>
+    </transition>
+    <transition target="off" event="C0HF" editor:waypoints="177,212.02;177,213.02" editor:labelAnchor="1,70.37208176966342,12" editor:labelRotation="-90" editor:id="t_01KP5AKN2E6S9W6602MPS8GD21">
+      <assign location="target_temp_01c" expr="0"/>
+      <log expr="'Temp off'" label="FW"/>
+    </transition>
+    <transition target="heating" event="C0RP" editor:waypoints="42,120.02000000000001;132,120.02000000000001" editor:labelAnchor="1,0,24.5" editor:id="t_01KP5AKN2EAZG003AMQF6X37XJ">
+      <log expr="'Query temp: '+current_temp_01c" label="FW"/>
+    </transition>
+    <transition target="error_temp" event="temp.error" editor:waypoints="207,225.02;207,255.02;1512,255.02;1512,221.02" editor:labelAnchor="1,177.82333418997757,5.206135896861184" editor:labelRotation="-90" editor:id="t_01KP5AKN2EN8JJTCRX0KNCMDX9">
+      <assign location="last_error" expr="19"/>
+      <log expr="'Temp error (19)'" label="ERROR"/>
+    </transition>
+  </state>
+  <state id="at_temperature" editor:x="378" editor:y="74.02000000000001" editor:width="225" editor:height="75" editor:label="at_temperature" editor:color="#2a2a3c" editor:zIndex="2">
+    <onentry>
+      <assign location="current_temp_01c" expr="target_temp_01c"/>
+      <log expr="'At target '+target_temp_01c+' (0.1C)'" label="FW"/>
+    </onentry>
+    <transition target="heating" event="C0HI" editor:waypoints="260,124.02000000000001;260,187.02" editor:labelAnchor="0,50.055894686619865,0" editor:id="t_01KP5AKN2E5Q01MZJV7RC33K10">
+      <assign location="target_temp_01c" expr="_event.data.hi||target_temp_01c"/>
+    </transition>
+    <transition target="at_temperature" event="C0HC" editor:waypoints="468,64.02000000000001;513,64.02000000000001" editor:labelAnchor="0,-8.40922630666472,7" editor:id="t_01KP5AKN2EYYMXRQC4BCQAFDE8">
+      <assign location="target_temp_01c" expr="_event.data.hc||target_temp_01c"/>
+    </transition>
+    <transition target="off" event="C0HF" editor:waypoints="1224,124.02000000000001;1224,183.02" editor:labelRotation="-90" editor:id="t_01KP5AKN2EJDP6PTHMYFCB8VJ2">
+      <assign location="target_temp_01c" expr="0"/>
+      <log expr="'Temp off'" label="FW"/>
+    </transition>
+    <transition target="at_temperature" event="C0RP" editor:waypoints="423,32.02000000000001;558,32.02000000000001" editor:labelAnchor="0,37.34600035498539,-11.200715846213466" editor:id="t_01KP5AKN2E8E85AXRA9DDW8PM2">
+      <log expr="'Query temp: '+current_temp_01c" label="FW"/>
+    </transition>
+  </state>
+  <state id="error_temp" editor:x="2091" editor:y="165.02" editor:width="175" editor:height="75" editor:label="error_temp" editor:color="#2a2a3c" editor:zIndex="8">
+    <onentry>
+      <log expr="'Temp error '+last_error" label="ERROR"/>
+    </onentry>
+    <transition target="off" event="C0HF" editor:id="t_01KP5AKN2E1G61SDV6AVJGQ7EK">
+      <assign location="last_error" expr="0"/>
+      <assign location="target_temp_01c" expr="0"/>
+    </transition>
+  </state>
+</scxml>

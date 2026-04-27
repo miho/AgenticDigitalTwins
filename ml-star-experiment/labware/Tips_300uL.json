@@ -1,0 +1,26 @@
+{
+  "type": "Tips_300uL",
+  "category": "tip_rack",
+  "description": "Hamilton 300uL CO-RE tips, 96 per rack",
+  "manufacturer": "Hamilton",
+  "geometry": {
+    "rows": 8,
+    "columns": 12,
+    "wellPitch": 90,
+    "wellShape": "round",
+    "wellDepth": 0,
+    "wellDiameterTop": 65,
+    "wellVolume": 0
+  },
+  "dimensions": {
+    "length": 1276,
+    "width": 855,
+    "height": 500,
+    "flangeHeight": 0
+  },
+  "positions": {
+    "layout": "grid",
+    "offsetX": 145,
+    "offsetY": 115
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "hamilton-star-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Hamilton STAR Digital Twin — lets AI agents control and inspect the device simulator",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --noEmit && npm run build:bundle",
+    "build:typecheck": "tsc --noEmit",
+    "build:bundle": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/index.js --sourcemap",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.6.0"
+  }
+}

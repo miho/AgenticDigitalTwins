@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_CoReGripper">
+  <datamodel>
+    <data id="tool_attached" expr="false"/>
+    <data id="plate_gripped" expr="false"/>
+    <data id="pos_x" expr="0"/>
+    <data id="pos_y" expr="0"/>
+    <data id="pos_z" expr="0"/>
+    <data id="grip_width" expr="0"/>
+    <data id="last_barcode" expr="''"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized">
+    <state id="not_initialized">
+      <!-- Get tool initializes the gripper -->
+      <transition target="empty_grip" event="C0ZT">
+        <assign location="tool_attached" expr="true"/>
+        <assign location="plate_gripped" expr="false"/>
+        <assign location="pos_x" expr="_event.data.xs||0"/>
+        <assign location="pos_y" expr="_event.data.ya||0"/>
+        <log expr="'Gripper: tool attached'" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="tool_ready" initial="empty_grip">
+      <!-- Discard tool -->
+      <transition target="not_initialized" event="C0ZS">
+        <assign location="tool_attached" expr="false"/>
+        <assign location="plate_gripped" expr="false"/>
+        <log expr="'Gripper: tool discarded'" label="FW"/>
+      </transition>
+      <!-- Open gripper (works in any tool_ready sub-state) -->
+      <transition target="empty_grip" event="C0ZO">
+        <assign location="plate_gripped" expr="false"/>
+        <log expr="'Gripper: opened'" label="FW"/>
+      </transition>
+      <!-- Read barcode (non-destructive, stays in state) -->
+      <transition target="tool_ready" event="C0ZB">
+        <assign location="last_barcode" expr="'BC'+Math.floor(Math.random()*100000)"/>
+        <log expr="'Gripper: barcode read: '+last_barcode" label="FW"/>
+      </transition>
+
+      <state id="empty_grip">
+        <!-- Get plate -->
+        <transition target="plate_gripped_state" event="C0ZP">
+          <assign location="plate_gripped" expr="true"/>
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <assign location="pos_y" expr="_event.data.yj||pos_y"/>
+          <assign location="pos_z" expr="_event.data.zj||pos_z"/>
+          <log expr="'Gripper: plate picked up at X='+(_event.data.xs||pos_x)" label="FW"/>
+        </transition>
+        <!-- Put plate without having one = error -->
+        <transition target="error_grip" event="C0ZR">
+          <assign location="last_error" expr="22"/>
+          <log expr="'Gripper: no plate to place (error 22)'" label="ERROR"/>
+        </transition>
+      </state>
+
+      <state id="plate_gripped_state">
+        <!-- Put plate -->
+        <transition target="empty_grip" event="C0ZR">
+          <assign location="plate_gripped" expr="false"/>
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <assign location="pos_y" expr="_event.data.yj||pos_y"/>
+          <log expr="'Gripper: plate placed at X='+(_event.data.xs||pos_x)" label="FW"/>
+        </transition>
+        <!-- Move plate -->
+        <transition target="moving_grip" event="C0ZM">
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <log expr="'Gripper: moving plate to X='+(_event.data.xs||pos_x)" label="FW"/>
+        </transition>
+        <!-- Get plate when already gripped = error -->
+        <transition target="error_grip" event="C0ZP">
+          <assign location="last_error" expr="22"/>
+          <log expr="'Gripper: already holding plate (error 22)'" label="ERROR"/>
+        </transition>
+      </state>
+    </state>
+
+    <state id="moving_grip">
+      <onentry>
+        <send event="move_grip.done" delayexpr="_event.data._delay || '800ms'" id="move_grip_timer"/>
+      </onentry>
+      <transition target="plate_gripped_state" event="move_grip.done">
+        <log expr="'Gripper: move complete'" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="error_grip">
+      <onentry>
+        <log expr="'Gripper error '+last_error" label="ERROR"/>
+      </onentry>
+      <!-- Re-init by getting tool again -->
+      <transition target="empty_grip" event="C0ZT">
+        <assign location="last_error" expr="0"/>
+        <assign location="tool_attached" expr="true"/>
+        <assign location="plate_gripped" expr="false"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

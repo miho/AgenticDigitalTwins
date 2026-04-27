@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hamilton STAR Digital Twin — Architecture</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" id="hljs-theme" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Dark palette (default) — tuned to the GitHub-flavour used
+     * throughout the docs and the deck screenshots. */
+    :root, [data-theme="dark"] {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --bg-panel: #1c2128;
+      --fg: #e6edf3;
+      --fg-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-2: #7ee787;
+      --accent-3: #f5be3c;
+      --accent-4: #ff7b72;
+      --border: #30363d;
+      --code-bg: #0d1117;
+      --radial-1: rgba(88, 166, 255, 0.08);
+      --radial-2: rgba(245, 190, 60, 0.05);
+      --callout-bg-a: rgba(88, 166, 255, 0.12);
+      --callout-bg-b: rgba(88, 166, 255, 0.02);
+      --warning-bg-a: rgba(245, 190, 60, 0.12);
+      --warning-bg-b: rgba(245, 190, 60, 0.02);
+      --insight-bg-a: rgba(126, 231, 135, 0.1);
+      --insight-bg-b: rgba(126, 231, 135, 0.02);
+      --card-bg: rgba(22, 27, 34, 0.6);
+    }
+    /* Light palette — high-contrast, print-safe version of the
+     * same accent system. Preserves the four accent hues (blue,
+     * green, amber, red) at slightly deeper shades so they stay
+     * legible on a white background. Triggered by pressing `T`
+     * or clicking the theme toggle; persisted to localStorage. */
+    [data-theme="light"] {
+      --bg: #fbfcfd;
+      --bg-soft: #f1f3f5;
+      --bg-panel: #ffffff;
+      --fg: #1c2128;
+      --fg-muted: #57606a;
+      --accent: #0969da;
+      --accent-2: #1a7f37;
+      --accent-3: #bf8700;
+      --accent-4: #cf222e;
+      --border: #d0d7de;
+      --code-bg: #f6f8fa;
+      --radial-1: rgba(9, 105, 218, 0.06);
+      --radial-2: rgba(191, 135, 0, 0.04);
+      --callout-bg-a: rgba(9, 105, 218, 0.1);
+      --callout-bg-b: rgba(9, 105, 218, 0.02);
+      --warning-bg-a: rgba(191, 135, 0, 0.12);
+      --warning-bg-b: rgba(191, 135, 0, 0.02);
+      --insight-bg-a: rgba(26, 127, 55, 0.1);
+      --insight-bg-b: rgba(26, 127, 55, 0.02);
+      --card-bg: rgba(246, 248, 250, 0.7);
+    }
+
+    html, body { background: var(--bg); }
+    [data-theme="light"] .hljs { background: var(--code-bg) !important; color: var(--fg) !important; }
+
+    .reveal {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      font-weight: 400;
+      color: var(--fg);
+      background:
+        radial-gradient(ellipse at 20% -10%, var(--radial-1), transparent 50%),
+        radial-gradient(ellipse at 80% 110%, var(--radial-2), transparent 50%),
+        var(--bg);
+    }
+
+    /* Let Reveal auto-scale dense slides instead of clipping them.
+     * `overflow: visible` is what Reveal measures; with our generous
+     * virtual height (920) and small margin (0.03), most slides fit
+     * at native scale, and the few tall ones shrink to fit.
+     * Box-sizing border-box on every section keeps padding inside
+     * the measured height so the scaling math stays correct.
+     * A 28 px bottom pad reserves space for the corner chrome
+     * (slide number + nav arrows) so content never crowds it.
+     * The pill's own absolute position adds another ~18 px of
+     * natural clearance from the viewport edge. */
+    .reveal .slides > section,
+    .reveal .slides > section > section {
+      box-sizing: border-box;
+      overflow: visible;
+      padding-bottom: 28px;
+    }
+    /* Title slide sets its own padding inline — keep it unaffected. */
+    .reveal .slides > section.title-slide,
+    .reveal .slides > section.section-divider { padding-bottom: 0; }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+      text-transform: none;
+      text-shadow: none;
+      margin-top: 0;
+    }
+
+    /* Tightened a notch so data-dense slides (7-row tables, 4-card
+     * grids, the three-principle divider) all fit the 920 px
+     * virtual height without spilling past the slide-number pill
+     * at the bottom-left. */
+    .reveal h1 { font-size: 1.95em; line-height: 1.12; margin-bottom: 0.35em; }
+    .reveal h2 { font-size: 1.35em; line-height: 1.2; margin-bottom: 0.4em; }
+    .reveal h3 { font-size: 1.05em; color: var(--accent); font-weight: 500; margin-bottom: 0.3em; }
+    .reveal h4 { font-size: 0.9em; color: var(--fg-muted); font-weight: 500; }
+
+    .reveal p, .reveal li { line-height: 1.45; }
+    .reveal ul, .reveal ol { display: block; }
+    .reveal li { margin: 0.25em 0; }
+
+    .reveal code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-panel);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--accent-2);
+      border: 1px solid var(--border);
+    }
+
+    .reveal pre {
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--code-bg);
+      font-size: 0.5em;
+    }
+
+    .reveal pre code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      padding: 20px 24px;
+      max-height: 560px;
+      border: none;
+      background: transparent;
+      color: var(--fg);
+      font-size: 1em;
+      line-height: 1.5;
+      border-radius: 8px;
+    }
+
+    .reveal a { color: var(--accent); }
+
+    .reveal table {
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0.5em auto;
+      font-size: 0.7em;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .reveal table th, .reveal table td {
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 0.4em 0.8em;
+      text-align: left;
+    }
+    .reveal table th:last-child, .reveal table td:last-child { border-right: none; }
+    .reveal table tr:last-child td { border-bottom: none; }
+    .reveal table th {
+      background: var(--bg-panel);
+      color: var(--accent);
+      font-weight: 500;
+      font-size: 0.95em;
+      letter-spacing: 0.01em;
+    }
+    .reveal table td code { font-size: 0.85em; }
+
+    .reveal section img {
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      max-height: 500px;
+    }
+
+    /* Mermaid containers */
+    .mermaid-slide {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .mermaid {
+      background: transparent !important;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0.2em auto;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      max-height: 600px !important;
+      height: auto !important;
+      filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.35));
+    }
+    /* Guarantee text + chrome inside Mermaid SVGs follow the active
+     * theme — some diagram types (state-diagram state labels,
+     * sequence-diagram Notes) ignore `themeVariables` in Mermaid 11
+     * and default to near-black. Driving these from the same CSS
+     * vars the rest of the deck uses lets both light and dark
+     * themes look right without re-rendering on every toggle. */
+    .mermaid svg text,
+    .mermaid svg .nodeLabel,
+    .mermaid svg .edgeLabel,
+    .mermaid svg .label,
+    .mermaid svg foreignObject div,
+    .mermaid svg foreignObject span {
+      fill: var(--fg) !important;
+      color: var(--fg) !important;
+    }
+    .mermaid svg .messageText { fill: var(--fg) !important; }
+    .mermaid svg .noteText    { fill: var(--fg) !important; }
+    .mermaid svg .loopText, .mermaid svg .loopText tspan { fill: var(--accent) !important; }
+    .mermaid svg .labelBkg    { fill: var(--bg-soft) !important; opacity: 0.9 !important; }
+    .mermaid svg rect.actor   { fill: var(--bg-panel) !important; stroke: var(--accent) !important; }
+    .mermaid svg .activation0, .mermaid svg .activation1, .mermaid svg .activation2 {
+      fill: var(--bg-panel) !important; stroke: var(--accent) !important;
+    }
+
+    /* Title slide — vertical rhythm trimmed so the meta line fits
+     * above the slide-number pill without competing with it. */
+    .title-slide {
+      text-align: left;
+      padding: 1em 2em;
+    }
+    .title-slide .eyebrow {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.65em;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.4em;
+    }
+    .title-slide h1 {
+      font-size: 2.6em;
+      line-height: 1.05;
+      margin-bottom: 0.45em;
+      background: linear-gradient(135deg, var(--fg) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-slide .sub {
+      font-size: 0.95em;
+      color: var(--fg-muted);
+      font-weight: 300;
+      max-width: 30ch;
+      line-height: 1.45;
+    }
+    .title-slide .meta {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      color: var(--fg-muted);
+      margin-top: 1.6em;
+      letter-spacing: 0.05em;
+    }
+    .title-slide .meta span { color: var(--accent-3); }
+
+    /* Big number */
+    .big-nums {
+      display: flex;
+      gap: 2em;
+      justify-content: center;
+      margin: 1em 0;
+      flex-wrap: wrap;
+    }
+    .big-nums .num {
+      text-align: center;
+      padding: 0.6em 1em;
+    }
+    .big-nums .num .n {
+      font-size: 2.8em;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.15em;
+    }
+    .big-nums .num .l {
+      font-size: 0.6em;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    /* Section divider */
+    .section-divider {
+      text-align: center;
+    }
+    .section-divider .tag {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7em;
+      letter-spacing: 0.25em;
+      margin-bottom: 1em;
+    }
+    .section-divider h1 {
+      font-size: 3.6em;
+      background: linear-gradient(135deg, var(--fg), var(--accent) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+
+    /* Principle card — the "Three decisions" divider shows three
+     * of these stacked, so they have to be compact enough to fit
+     * the 920 px virtual slide height (including the preceding
+     * eyebrow + h1 on the same page). Padding and number-column
+     * width both trimmed from earlier, noticeably larger spec. */
+    .principle {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 0.9em;
+      align-items: start;
+      text-align: left;
+      padding: 0.35em 0;
+    }
+    .principle .n {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 2.2em;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 0.9;
+    }
+    .principle h2 { margin-top: 0.05em; margin-bottom: 0.2em; font-size: 1.1em; }
+    .principle p { color: var(--fg-muted); margin: 0; font-size: 0.75em; line-height: 1.45; }
+
+    /* Two column */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.6em;
+      text-align: left;
+    }
+    .cols.three { grid-template-columns: 1fr 1fr 1fr; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75em 0.95em;
+    }
+    .card h3 { margin-top: 0; margin-bottom: 0.3em; font-size: 0.85em; }
+    .card p, .card ul { font-size: 0.7em; color: var(--fg-muted); margin: 0; }
+    .card ul { padding-left: 1.1em; }
+
+    /* Callout */
+    .callout {
+      background: linear-gradient(135deg, var(--callout-bg-a), var(--callout-bg-b));
+      border-left: 3px solid var(--accent);
+      padding: 0.75em 1.2em;
+      border-radius: 6px;
+      font-size: 0.75em;
+      line-height: 1.5;
+      color: var(--fg);
+      text-align: left;
+      margin: 0.5em 0;
+    }
+    .callout.warning {
+      background: linear-gradient(135deg, var(--warning-bg-a), var(--warning-bg-b));
+      border-left-color: var(--accent-3);
+    }
+    .callout.insight {
+      background: linear-gradient(135deg, var(--insight-bg-a), var(--insight-bg-b));
+      border-left-color: var(--accent-2);
+    }
+    .callout .label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75em;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5em;
+    }
+    .callout.warning .label { color: var(--accent-3); }
+    .callout.insight .label { color: var(--accent-2); }
+
+    /* Caption below diagram */
+    .caption {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      color: var(--fg-muted);
+      letter-spacing: 0.05em;
+      margin-top: 0.8em;
+      text-align: center;
+    }
+
+    /* List with accent arrows */
+    .reveal ul.accent li {
+      list-style: none;
+      position: relative;
+      padding-left: 1.3em;
+    }
+    .reveal ul.accent li::before {
+      content: "▸";
+      color: var(--accent);
+      position: absolute;
+      left: 0;
+    }
+
+    /* Slide-number anchored BOTTOM-LEFT so it never fights with the
+     * nav arrows (reveal.js paints those bottom-right). A subtle
+     * background pill keeps it readable when a dense slide's
+     * content reaches the bottom of the viewport. */
+    .reveal .slide-number {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--fg-muted);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      font-size: 0.7em;
+      left: 18px;
+      right: auto;
+      bottom: 14px;
+      top: auto;
+      padding: 3px 10px;
+      border-radius: 999px;
+      z-index: 40;
+    }
+
+    /* Progress bar */
+    .reveal .progress {
+      color: var(--accent);
+      height: 3px;
+    }
+
+    /* Controls — nudge up so the bottom-right arrow group doesn't
+     * sit on the page edge and so the progress bar has clearance. */
+    .reveal .controls {
+      color: var(--accent);
+      bottom: 20px;
+      right: 20px;
+    }
+    .reveal .controls button::before,
+    .reveal .controls button::after { color: var(--accent); }
+
+    /* Theme toggle — fixed top-right. Cycles dark → light. `T`
+     * keyboard shortcut works too. Persisted to localStorage. */
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 60;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--fg-muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: color 120ms, border-color 120ms, background 120ms;
+    }
+    .theme-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* RAG vs Twin paradigm comparison — themed boxes that flip
+     * palette automatically when `body[data-theme]` changes. */
+    .paradigm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5em;
+      margin-top: 0.6em;
+    }
+    .paradigm-col {
+      border: 1px solid;
+      border-radius: 12px;
+      padding: 1em 1.1em;
+      text-align: left;
+    }
+    .paradigm-col.rag {
+      background: color-mix(in srgb, var(--accent-4) 6%, var(--bg));
+      border-color: color-mix(in srgb, var(--accent-4) 40%, transparent);
+    }
+    .paradigm-col.twin {
+      background: color-mix(in srgb, var(--accent-2) 6%, var(--bg));
+      border-color: color-mix(in srgb, var(--accent-2) 40%, transparent);
+    }
+    .paradigm-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.6em;
+      letter-spacing: 0.25em;
+      text-align: center;
+      margin-bottom: 0.7em;
+    }
+    .paradigm-col.rag  .paradigm-label { color: var(--accent-4); }
+    .paradigm-col.twin .paradigm-label { color: var(--accent-2); }
+    .paradigm-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45em;
+    }
+    .paradigm-box {
+      padding: 0.45em 0.85em;
+      border-radius: 6px;
+      border: 1px solid;
+      background: var(--bg-panel);
+    }
+    .paradigm-col.rag  .paradigm-box { border-color: color-mix(in srgb, var(--accent-4) 45%, transparent); }
+    .paradigm-col.twin .paradigm-box { border-color: color-mix(in srgb, var(--accent-2) 45%, transparent); }
+    .paradigm-arrow { text-align: center; font-size: 0.8em; color: var(--fg-muted); }
+    .paradigm-foot {
+      text-align: center;
+      font-size: 0.7em;
+      color: var(--fg-muted);
+      margin-top: 0.4em;
+      font-style: italic;
+    }
+    .paradigm-col.twin .paradigm-foot { color: var(--accent-2); }
+
+    .small { font-size: 0.7em !important; }
+    .tiny { font-size: 0.55em !important; }
+    .muted { color: var(--fg-muted); }
+    .accent { color: var(--accent); }
+    .accent-2 { color: var(--accent-2); }
+    .accent-3 { color: var(--accent-3); }
+    .mono { font-family: "JetBrains Mono", monospace; }
+    .center { text-align: center; }
+    .left { text-align: left; }
+  </style>
+</head>
+<body data-theme="dark">
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark (T)">Light</button>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================
+     TITLE
+============================================================ -->
+<section class="title-slide">
+  <div class="eyebrow">Architecture · 2026-04-20</div>
+  <h1>Hamilton STAR<br/>Digital Twin</h1>
+  <div class="sub">
+    A firmware-faithful, state-machine-driven instrument simulator
+    with a shared datamodel between simulation, visualization, and
+    AI-agent introspection.
+  </div>
+  <div class="meta">
+    <span>236</span> FW commands &nbsp;·&nbsp;
+    <span>10</span> SCXML modules &nbsp;·&nbsp;
+    <span>33</span> step types &nbsp;·&nbsp;
+    <span>439</span> passing tests
+  </div>
+</section>
+
+<!-- ============================================================
+     THE BIG IDEA
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">THE BIG IDEA</div>
+  <h1>Three decisions.</h1>
+</section>
+
+<section>
+  <div class="principle">
+    <div class="n">01</div>
+    <div>
+      <h2>Firmware is the contract.</h2>
+      <p>The boundary of the simulation is the Hamilton C0 firmware protocol — same ASCII commands the physical instrument's master controller accepts. VENUS, the TCP bridge, raw MCP calls, and in-memory tests all cross the same line.</p>
+    </div>
+  </div>
+  <div class="principle">
+    <div class="n">02</div>
+    <div>
+      <h2>SCXML is the logic.</h2>
+      <p>Each hardware module is a W3C-compliant state chart. Transitions are data, authored in VSCXML, compiled to JS. There is no imperative engine pretending to be a state machine.</p>
+    </div>
+  </div>
+  <div class="principle">
+    <div class="n">03</div>
+    <div>
+      <h2>The datamodel is shared.</h2>
+      <p>Positions, tip state, volumes, liquid components — one store. The renderer reads it, physics observes it, the HTTP API snapshots it, the MCP agent queries it. No DTOs. No drift.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     WHY NOT THE USUAL APPROACHES
+============================================================ -->
+<section>
+  <h2>Why not the usual approaches</h2>
+  <table>
+    <thead>
+      <tr><th>Approach</th><th>Where it lives</th><th>Why it falls short</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Protocol-level simulator</b></td>
+        <td>VENUS step layer</td>
+        <td>Each step is a black box; can't catch FW-level failures; the real VENUS runtime won't drive it.</td>
+      </tr>
+      <tr>
+        <td><b>Full-stack emulator</b></td>
+        <td>C/C++ binary that mimics FW</td>
+        <td>Heavy, opaque, non-portable; physics is baked into the same code that implements the protocol.</td>
+      </tr>
+      <tr>
+        <td><b>Paper &amp; Excel</b></td>
+        <td>Human-written procedures</td>
+        <td>Doesn't execute; doesn't catch collisions or dead-volume underflow; no feedback loop for LLMs.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top: 1em; font-size: 0.75em;">
+    <div class="label">GOAL</div>
+    A simulator that <b>speaks firmware</b> — whatever drives the real
+    instrument drives the twin. Visualization, physics, audits, and agent
+    tool-use all derive from that one execution path.
+  </div>
+</section>
+
+<!-- ============================================================
+     LAYERED ARCHITECTURE
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">THE BLUEPRINT</div>
+  <h1>One pipeline. Many clients.</h1>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">Layered architecture</h3>
+  <div class="mermaid">
+flowchart TB
+    subgraph clients["CLIENTS"]
+        direction LR
+        venus["VENUS 6.0.2 — TCP :34567"]
+        browser["Browser UI — SVG deck"]
+        agent["LLM agent — MCP"]
+        tests["Tests — in-process"]
+    end
+
+    subgraph transport["TRANSPORT"]
+        direction LR
+        bdz["BDZ bridge"]
+        rest["REST + SSE"]
+        mcp["MCP registry"]
+    end
+
+    api["DigitalTwinAPI &nbsp;·&nbsp; sendCommand / sendCommandDeferred"]
+
+    subgraph core["CORE TWIN"]
+        direction TB
+        dt["DigitalTwin — event map + pipeline"]
+        scxml["SCXML runtime — 10 modules"]
+        dm[("Shared datamodel &nbsp;·&nbsp; pos · tip · volume · liquid")]
+        plugins["Physics plugins — validate + observe"]
+    end
+
+    subgraph catalogs["SELF-DESCRIBING CATALOGS"]
+        cat["module-registry · pip-command-catalog · labware · carriers"]
+    end
+
+    subgraph renderer["RENDERER"]
+        svg["SVG · channels · inspector"]
+        arm["Motion envelope animator"]
+    end
+
+    venus --> bdz
+    browser --> rest
+    agent --> mcp
+    tests -.-> api
+
+    bdz --> api
+    rest --> api
+    mcp --> api
+    mcp -.->|read| catalogs
+
+    api --> dt
+    dt --> scxml --> dm
+    dt --> plugins --> dm
+    dt -->|envelope| arm
+    rest -->|SSE| renderer
+    svg -.->|reads| dm
+
+    %% Stroke-width-only emphasis — no hardcoded colors so both
+    %% light and dark themes pick up the active palette.
+    classDef highlight stroke-width:3px
+    class dm,api highlight
+  </div>
+  <div class="caption">Every client route converges on <code>sendCommand</code>. One pipeline. One datamodel.</div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 1 — FIRMWARE CONTRACT
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 01</div>
+  <h1>Firmware as the contract</h1>
+</section>
+
+<section>
+  <h2>What a command actually looks like</h2>
+  <pre style="font-size: 0.48em;"><code class="language-text">C0ASid0004xp02755yp05300av01000tm01lm0zp01800
+    │    │        │        │   │   │    │
+    │    │        │        │   │   │    └──  Z target (18 mm)
+    │    │        │        │   │   └───────  LLD mode
+    │    │        │        │   └───────────  channel mask (ch1)
+    │    │        │        └───────────────  volume (100 µL in 0.1 µL)
+    │    │        └────────────────────────  Y (530 mm)
+    │    └─────────────────────────────────  X (275.5 mm)
+    └──────────────────────────────────────  event id</code></pre>
+  <div class="callout insight" style="margin-top: 0.6em;">
+    <div class="label">WHY IT MATTERS</div>
+    VENUS drives the twin <b>bit-for-bit unchanged</b>. It opens a TCP connection to the bridge,
+    sends exactly this string, and reads back an ACK identical to what a real STAR would return.
+  </div>
+</section>
+
+<section>
+  <h2>Every client, one execution path</h2>
+  <div class="cols">
+    <div class="card">
+      <h3 class="accent">VENUS</h3>
+      <p>Opens TCP to <code>:34567</code>. Sends FW strings. Gets ACKs. Doesn't know it isn't talking to a physical STAR.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-2">Browser</h3>
+      <p>Buttons + protocol editor synthesize FW strings, POST <code>/command</code>. SSE stream returns motion envelopes + assessments.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-3">LLM agent</h3>
+      <p>MCP <code>twin.sendCommand { raw: "C0AS…" }</code>. Same string space. Plus <code>docs.*</code> tools to discover what's available.</p>
+    </div>
+    <div class="card">
+      <h3 style="color: var(--accent-4);">Tests</h3>
+      <p>Hold a <code>DigitalTwin</code> in-memory, call <code>sendCommand</code> synchronously. Same pipeline as production.</p>
+    </div>
+  </div>
+  <div class="callout" style="font-size: 0.7em; padding: 0.55em 1em;">
+    <div class="label">PROVABLE FIDELITY</div>
+    <code>fw-trace-replay.test.ts</code> replays real VENUS traces, asserts byte-identical ACKs.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 2 — SCXML
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 02</div>
+  <h1>SCXML as module logic</h1>
+</section>
+
+<section>
+  <h2>Hardware modules <i>are</i> state machines.</h2>
+  <ul class="accent" style="font-size: 0.9em; margin-top: 1em;">
+    <li>A PIP channel is <code>no_tip → tip_empty → tip_loaded</code>. It <b>cannot</b> dispense from <code>tip_empty</code> — the firmware refuses.</li>
+    <li>iSWAP: <code>idle → gripping → holding → moving → releasing</code>. A misordered command drops into <code>error</code> and latches.</li>
+    <li>Master owns the sys-init sequence — 81 commands, most only legal after the appropriate init step.</li>
+  </ul>
+  <div class="callout warning" style="margin-top: 1em;">
+    <div class="label">THE IMPERATIVE TRAP</div>
+    Writing this as <code>if (state === X && !flag && !errorPending)</code> produces a tangle.
+    Writing it as SCXML produces <b>a picture that is the program.</b>
+  </div>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">PIP channel state chart (simplified)</h3>
+  <div class="mermaid">
+stateDiagram-v2
+    [*] --> no_tip
+    no_tip --> tip_empty : C0TP
+    tip_empty --> no_tip : C0TR
+    tip_empty --> tip_loaded : C0AS
+    tip_loaded --> tip_empty : C0DS (dm=4, blowout)
+    tip_loaded --> tip_loaded : C0AS
+    tip_loaded --> tip_loaded : C0DS (dm=2/3)
+    tip_loaded --> no_tip : C0TR
+    tip_empty --> error : C0AS (tm conflict)
+    tip_loaded --> error : C0TP (already loaded)
+  </div>
+  <div class="caption">scxml/pip_channel.scxml · authored in VSCXML · compiled to JS by scripts/build-sm.js</div>
+</section>
+
+<section>
+  <h2>A transition's effect</h2>
+  <pre><code class="language-javascript">if (this._matchEvent(event.name, 'C0AS')) {
+  this._execScript(`
+    var av = _event.data.av || 0;
+    var total = 0;
+    for (var i = 0; i &lt; 16; i++) {
+      if (tip_fitted[i]) { volume[i] = av; total += av; }
+    }
+    active_volume_total = total;
+    if (_event.data.xp !== undefined) pos_x = _event.data.xp;
+    if (_event.data.yp !== undefined) { /* per-channel Y */ }
+    if (_event.data.zp !== undefined) {
+      for (var k = 0; k &lt; 16; k++) {
+        if (tip_fitted[k]) pos_z[k] = _event.data.zp;
+      }
+    }
+  `);
+}</code></pre>
+  <p class="small muted">This inline script is the <b>only</b> place these fields are written for this event.
+  No "backing store". No mutation method. The datamodel assignments <i>are</i> the transition's effect.</p>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 3 — SHARED DATAMODEL
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 03</div>
+  <h1>One shared datamodel</h1>
+</section>
+
+<section>
+  <h2>The trap most simulators fall into</h2>
+  <pre style="font-size: 0.55em;"><code class="language-text">[ UI state ]  ←  custom sync code  ←  [ engine state ]
+                                             ↑
+                                [ separate physics state ]
+                                             ↑
+                                [ tests mock their own state ]</code></pre>
+  <div class="callout warning">
+    <div class="label">EVERY ARROW IS A BUG</div>
+    Three stores drift. Tests pass against mocks that don't match production. The UI shows 100 µL
+    when the engine knows it's 50. Users debug ghosts.
+  </div>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">What the twin does instead</h3>
+  <div class="mermaid">
+flowchart LR
+    scxml["SCXML transition — inline script"] -->|writes| dm[("Shared datamodel &nbsp;·&nbsp; pos · tip · volume · wells")]
+    tracker["DeckTracker"] -->|writes| dm
+    plugin["Physics plugin"] -->|reads| dm
+    renderer["Renderer"] -->|reads| dm
+    rest["REST /tracking"] -->|reads| dm
+    mcp["MCP getState"] -->|reads| dm
+    snap["snapshot()"] -->|reads| dm
+    test["Unit tests"] -->|reads + writes| dm
+
+    classDef db stroke-width:3px
+    class dm db
+  </div>
+  <div class="caption">One store. One writer per field. Every reader looks at the same thing.</div>
+</section>
+
+<section>
+  <h2>Concrete payoff</h2>
+  <div class="callout insight">
+    <div class="label">USER REPORT</div>
+    "The well shows 100 µL in the tooltip but I aspirated 200 µL and got no warning."
+  </div>
+  <ul class="accent" style="font-size: 0.85em; margin-top: 0.8em;">
+    <li><b>One place to look.</b> Not three stores. Not "which cache is stale". The shared datamodel either has the right value or doesn't.</li>
+    <li><b>Tests check production state.</b> After <code>C0AS</code>, a unit test reads the same <code>wellVolumes</code> map the browser renders from.</li>
+    <li><b>VENUS and the browser always agree.</b> When VENUS polls state, it sees the same numbers a developer's monitor is rendering in real time.</li>
+  </ul>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 4 — MOTION ENVELOPES
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 04</div>
+  <h1>Motion is real</h1>
+</section>
+
+<section>
+  <h2>Physical time, not cosmetic animation</h2>
+  <p class="small muted">A real <code>C0AS</code> descends Z, runs the plunger, retracts — ~2 s for a typical 100 µL aspirate.
+  The twin represents that time explicitly.</p>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">interface MotionEnvelope {
+  arm: "pip" | "iswap" | "h96" | "h384" | "autoload";
+  startX: number; startY: number;
+  endX: number;   endY: number;
+  startZ?: number; endZ?: number;
+  dwellZ?: number;           // Z-bob: descend → hold → retract
+  startRotation?: number;    endRotation?: number;
+  startGripWidth?: number;   endGripWidth?: number;
+  startTime: number;         // Date.now() at emit
+  durationMs: number;        // physics-plugin-computed
+  command: string;
+}</code></pre>
+  <p class="small muted center accent">Every temporal thing in the twin derives from this envelope.</p>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">State commits <b>on motion end</b></h3>
+  <div class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant API as sendCommandDeferred
+    participant Tw as DigitalTwin
+    participant R as Renderer
+    participant St as State
+
+    C->>API: C0AS raw command
+    API->>Tw: prepareAndEmitMotionEnvelope (peek)
+    Tw-->>R: envelope (t=0) — animation starts
+    Note over St: state UNCHANGED — /tracking returns pre-command snapshot
+    API->>API: setTimeout(durationMs × simSpeed)
+    API->>Tw: sendCommand (suppress envelope)
+    Tw->>St: SCXML transition + deckTracker + assess
+    St-->>R: SSE state-changed
+    API-->>C: CommandResult (at t = duration)
+  </div>
+  <div class="caption">Mid-motion state queries see the pre-command snapshot. No "future" values.</div>
+</section>
+
+<section>
+  <h2>Verified, not implied</h2>
+  <p class="small muted">Polled <code>GET /tracking</code> every 250 ms during a real-time C0AS for 300 µL:</p>
+  <table class="tiny" style="font-size: 0.68em;">
+    <thead><tr><th>t (ms)</th><th>well volume</th><th>animating?</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><b class="accent-2">50 000</b> (pre)</td><td>envelope active</td></tr>
+      <tr><td>250</td><td>50 000</td><td>descent phase</td></tr>
+      <tr><td>1 000</td><td>50 000</td><td>plunger hold</td></tr>
+      <tr><td>2 000</td><td>50 000</td><td>retract phase</td></tr>
+      <tr><td>3 040</td><td>50 000</td><td>envelope ending</td></tr>
+      <tr><td><b class="accent">3 087</b></td><td><b class="accent-3">47 000</b> (committed)</td><td>done</td></tr>
+    </tbody>
+  </table>
+  <div class="callout insight center" style="font-size: 0.85em;">
+    Pre-command snapshot all the way through the motion. Commit at exactly one poll past envelope end.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 5 — PHYSICS AS SIDE-CAR
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 05</div>
+  <h1>Physics is observational</h1>
+</section>
+
+<section>
+  <h2>Two-phase plugin contract</h2>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">interface PhysicsPlugin {
+  // Pre-commit: can REJECT (errorCode). Hard safety invariants.
+  validateCommand?(event, data, deckTracker, dm):
+    { valid: boolean; errorCode?: number };
+
+  // Pre-commit: stamps `_delay`, computes derived fields. Never rejects.
+  onBeforeEvent?(event, data): data;
+
+  // Post-commit: OBSERVES. Never rejects. Emits AssessmentEvents.
+  assess?(event, data, deckTracker): AssessmentEvent[];
+}</code></pre>
+  <div class="cols" style="margin-top: 0.6em;">
+    <div class="card">
+      <h3>Validation REJECTS</h3>
+      <p>Tip mask conflict · Z below traverse while X moving · tip already fitted. Error code returned; nothing else happens.</p>
+    </div>
+    <div class="card">
+      <h3>Assessment REPORTS</h3>
+      <p>empty_aspiration · volume_underflow · contamination · LLD-no-liquid · TADM-deviation · collision · air_in_dispense.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Why the split matters</h2>
+  <div class="callout warning">
+    <div class="label">CONFLATING REJECT + REPORT</div>
+    Produces simulators that either <b>refuse too much</b> ("too fussy to run real methods") or
+    <b>refuse too little</b> ("method ran but dispensed air into three wells silently").
+  </div>
+  <table class="small" style="margin-top: 0.8em;">
+    <thead><tr><th>Event</th><th>Real instrument behaviour</th><th>Twin verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Aspirate from empty well</td><td>Physically valid — draws air</td><td><b class="accent-2">assess</b> warning</td></tr>
+      <tr><td>Tip mask conflict</td><td>FW refuses (error 07)</td><td><b class="accent-4">validate</b> reject</td></tr>
+      <tr><td>100 µL req, 10 µL available</td><td>Gets 10 µL + 90 µL air</td><td><b class="accent-2">assess</b> warning</td></tr>
+      <tr><td>Cross-contamination</td><td>Completes silently</td><td><b class="accent-2">assess</b> per channel</td></tr>
+      <tr><td>Z below traverse + X move</td><td>Mechanical collision</td><td><b class="accent-4">validate</b> reject</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 6 — MCP DISCOVERY
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 06</div>
+  <h1>Self-describing via MCP</h1>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">Agent discovery flow</h3>
+  <div class="mermaid">
+sequenceDiagram
+    participant A as LLM agent
+    participant MCP as MCP registry
+    participant Twin as Twin + catalogs
+
+    A->>MCP: docs.overview
+    MCP-->>A: 236 events · 10 modules · 33 steps · catalog sizes · tool list
+
+    A->>MCP: docs.listFwCommands
+    MCP-->>A: full event catalogue
+
+    A->>MCP: docs.describeFwCommand { event: "C0AS" }
+    MCP-->>A: 39-field VENUS-sourced param spec
+
+    A->>MCP: twin.getState
+    MCP-->>A: live deck + tracker snapshot
+
+    A->>MCP: twin.sendCommand { raw: "C0AS…" }
+    Note over MCP,Twin: motion envelope → t=duration → commit
+    MCP-->>A: CommandResult + assessments
+  </div>
+  <div class="caption">The first call is always <code>docs.overview</code>. Everything else flows from it.</div>
+</section>
+
+<section>
+  <h2>28 tools · 6 namespaces</h2>
+  <table class="small">
+    <thead><tr><th>Namespace</th><th>Purpose</th><th>Key tools</th></tr></thead>
+    <tbody>
+      <tr><td><code>twin.*</code></td><td>Drive the instrument</td><td>sendCommand · getState · executeStep · snapshot · restore</td></tr>
+      <tr><td><code>analysis.*</code></td><td>Traces, what-if</td><td>load · jump · whatIf · inspectWell · findIssues · summary</td></tr>
+      <tr><td><code>report.*</code></td><td>Reports</td><td>summary · well · assessmentsCsv · timing · diff</td></tr>
+      <tr><td><code>deck.*</code></td><td>Layout I/O</td><td>importVenusLayout · loadLayout</td></tr>
+      <tr><td><code>venus.*</code></td><td>VENUS config</td><td>loadConfig</td></tr>
+      <tr><td class="accent"><code>docs.*</code></td><td class="accent"><b>Self-description</b></td><td class="accent">overview · listModules · listFwCommands · describeFwCommand · listLabware · listCarriers</td></tr>
+    </tbody>
+  </table>
+  <div class="callout insight" style="margin-top: 0.8em;">
+    <div class="label">NO MANUAL REQUIRED</div>
+    An agent's system prompt needs one sentence: <i>"You're connected to a Hamilton STAR twin via MCP. Call <code>docs.overview</code> first."</i>
+    &nbsp; The twin teaches the agent about itself.
+  </div>
+</section>
+
+<!-- ============================================================
+     RAG COMPARISON
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">WHY NOT RAG</div>
+  <h1>Documents vs. instruments</h1>
+</section>
+
+<section>
+  <h3 class="center">Two different paradigms</h3>
+  <div class="paradigm-grid">
+    <div class="paradigm-col rag">
+      <div class="paradigm-label">RAG</div>
+      <div class="mono small paradigm-flow">
+        <div class="paradigm-box">Static documents</div>
+        <div class="paradigm-arrow">↓ embed</div>
+        <div class="paradigm-box">Vector store</div>
+        <div class="paradigm-arrow">↓ similarity search</div>
+        <div class="paradigm-box">Retrieve top-k chunks</div>
+        <div class="paradigm-arrow">↓</div>
+        <div class="paradigm-box">LLM reasons from text</div>
+        <div class="paradigm-foot">… can only describe the corpus</div>
+      </div>
+    </div>
+    <div class="paradigm-col twin">
+      <div class="paradigm-label">DIGITAL TWIN + MCP</div>
+      <div class="mono small paradigm-flow">
+        <div class="paradigm-box">LIVE twin state</div>
+        <div class="paradigm-arrow">↕ reads / writes</div>
+        <div class="paradigm-box">Catalogues from code</div>
+        <div class="paradigm-arrow">↓</div>
+        <div class="paradigm-box">MCP tools (28)</div>
+        <div class="paradigm-arrow">↓</div>
+        <div class="paradigm-box">LLM calls tools</div>
+        <div class="paradigm-foot">→ drives + queries the instrument</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Side-by-side</h2>
+  <table class="tiny">
+    <thead><tr><th>Concern</th><th class="accent-4">RAG</th><th class="accent-2">Twin + MCP</th></tr></thead>
+    <tbody>
+      <tr><td><b>Source of truth</b></td><td>Static corpus</td><td>The running instrument</td></tr>
+      <tr><td><b>Staleness</b></td><td>Re-index when docs change</td><td>Zero — tools read live code</td></tr>
+      <tr><td><b>Schema drift</b></td><td>Manual vs code disagree</td><td>Impossible — extracted from code</td></tr>
+      <tr><td><b>Live-state queries</b></td><td>Impossible</td><td>First-class</td></tr>
+      <tr><td><b>Action capability</b></td><td>None (text only)</td><td>Drives the instrument</td></tr>
+      <tr><td><b>Feedback loop</b></td><td>Open loop</td><td>Closed — observe assessments</td></tr>
+      <tr><td><b>Reproducibility</b></td><td>Non-deterministic chunks</td><td>Same SCXML → same state</td></tr>
+      <tr><td><b>Audit trail</b></td><td>Prompt logs</td><td>Event spine · correlationId</td></tr>
+      <tr><td><b>Hallucination</b></td><td>Large surface</td><td>Small — tools return facts</td></tr>
+      <tr><td><b>"I don't know"</b></td><td>Interpolates silently</td><td>Explicit <code>params: null</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h1 class="accent" style="font-size: 2.2em; line-height: 1.1; margin-top: 0.5em;">
+    RAG treats an instrument<br/>
+    like a <span style="color: var(--accent-4);">document.</span>
+  </h1>
+  <h1 class="accent-2" style="font-size: 2.2em; line-height: 1.1; margin-top: 1em;">
+    The twin treats an instrument<br/>
+    like an <span style="color: var(--accent);">instrument.</span>
+  </h1>
+</section>
+
+<section>
+  <h2>The deeper point</h2>
+  <div class="callout insight" style="font-size: 0.95em; line-height: 1.55;">
+    A RAG-backed assistant can <i>explain</i> what a <code>C0AS</code> should do.
+    <br/><br/>
+    A twin-backed assistant can <b>run</b> the C0AS, observe that the well was empty, surface the
+    <code>empty_aspiration</code> warning, snapshot the state, fork a what-if where the well had
+    been filled first, and report which branch behaves correctly —
+    <br/><br/>
+    <b>all in one turn, with zero hallucination risk because the twin is the ground truth.</b>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW WE BUILT IT
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">THE JOURNEY</div>
+  <h1>Six phases.<br/>Serial execution.<br/>Deep review.</h1>
+</section>
+
+<section>
+  <h2>Phase chronology</h2>
+  <table class="small">
+    <thead><tr><th>Phase</th><th>Theme</th><th>Key deliverables</th></tr></thead>
+    <tbody>
+      <tr><td><b>0</b></td><td>Test infrastructure</td><td>Coverage tooling · audit · failure-injection harness</td></tr>
+      <tr><td><b>1</b></td><td>Serialization + spine</td><td>snapshot/restore · self-contained traces · unresolved-interaction assessments</td></tr>
+      <tr><td><b>2</b></td><td>Service architecture</td><td>Split monolith · dual-mode (Electron + headless)</td></tr>
+      <tr><td><b>3</b></td><td>Replay + analysis</td><td>State replay (not re-sim) · what-if branching · MCP analysis</td></tr>
+      <tr><td><b>4</b></td><td>Reports + physics</td><td>Protocol summary · CSVs · collision · TADM · LLD · foam</td></tr>
+      <tr><td><b>5</b></td><td>VENUS bridge</td><td>BDZ-over-TCP · FDx handshake · real-VENUS ACKs</td></tr>
+      <tr><td><b>6</b></td><td>Real-VENUS robustness</td><td>End-to-end 6.0.2 · .lay · .ctr · ghost tool · pan/zoom</td></tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top: 0.4em; font-size: 0.7em; padding: 0.55em 1em;">
+    <div class="label">APRIL 2026 POLISH</div>
+    Deferred state commit · Z-bar semantics · catalog consolidation · MCP discovery.
+  </div>
+</section>
+
+<!-- ============================================================
+     WHAT'S MISSING
+============================================================ -->
+<section>
+  <h2>What's still missing</h2>
+  <div class="cols">
+    <div>
+      <h3 class="accent">Plan residuals</h3>
+      <ul class="accent tiny">
+        <li>#55 part B — retire hardcoded <code>Y_FRONT</code>, <code>CARRIER_Y_DIM</code>, <code>totalTracks</code> fallbacks</li>
+        <li>#55 part C — delete embedded template tables, synthesise default deck from <code>.dck</code></li>
+        <li>Detailed FW catalogues for non-PIP families (TP · TR · JM · PP · PR · EM · EN · CL · CR · HHS)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="accent-3">Not yet planned</h3>
+      <ul class="accent tiny">
+        <li>Heater-shaker + 384-head SCXML thin spots</li>
+        <li>FW command registry codegen (from SCXML source)</li>
+        <li>Persistent event spine (cross-session replay)</li>
+        <li>Step-type param-schema introspection</li>
+        <li>Foam / meniscus threshold calibration</li>
+        <li>More collision scenarios (cross-arm geometry)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout insight center" style="font-size: 0.85em; margin-top: 0.8em;">
+    None block the value proposition. All are fill-out work. The core architecture is stable.
+  </div>
+</section>
+
+<!-- ============================================================
+     WHAT THIS UNLOCKS
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">CAPABILITIES</div>
+  <h1>What this unlocks</h1>
+</section>
+
+<section>
+  <div class="cols">
+    <div class="card">
+      <h3 class="accent">Agent-driven automation</h3>
+      <p>An LLM with MCP access runs a method, observes assessments, adapts — on the simulator first, then on real hardware. Same FW boundary for both.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-2">Reproducibility</h3>
+      <p>Every trace replayable offline. A failed real-instrument run snapshot-shares + re-opens anywhere a twin runs.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-3">What-if training</h3>
+      <p>Fork a trace at any command, propose an alternative, diff the outcome. For teaching, post-mortems, pre-flight checks.</p>
+    </div>
+    <div class="card">
+      <h3 style="color: var(--accent-4);">Zero-ceremony introspection</h3>
+      <p>Any developer, operator, or agent asks the twin what it can do. The twin answers from the same codepath the execution lives in.</p>
+    </div>
+  </div>
+  <div class="callout insight" style="margin-top: 0.6em;">
+    <div class="label">PORTABLE PHYSICS</div>
+    Plugins are pure observers over the datamodel. Same check runs in Electron, headless Node, unit tests, and CI.
+  </div>
+</section>
+
+<!-- ============================================================
+     THE PRIMITIVES
+============================================================ -->
+<section>
+  <h2>The primitives</h2>
+  <table class="tiny">
+    <thead><tr><th>Primitive</th><th>File</th><th>One-line description</th></tr></thead>
+    <tbody>
+      <tr><td><code>DigitalTwin.sendCommand</code></td><td><code>digital-twin.ts</code></td><td>Parse FW → validate → SCXML → deckTracker → assess</td></tr>
+      <tr><td><code>sendCommandDeferred</code></td><td><code>api.ts</code></td><td>Envelope at t=0, commit at t=duration × simSpeed</td></tr>
+      <tr><td>SCXML datamodel</td><td><code>state-machines/modules/*</code></td><td>Shared state per module — the single source of truth</td></tr>
+      <tr><td><code>MotionEnvelope</code></td><td><code>digital-twin.ts:80</code></td><td>Typed temporal primitive with optional Z-bob</td></tr>
+      <tr><td>Physics plugin contract</td><td><code>digital-twin.ts:54</code></td><td>validate · onBeforeEvent · assess</td></tr>
+      <tr><td>Event spine</td><td><code>digital-twin.ts</code></td><td>Correlation-stamped linear timeline of everything</td></tr>
+      <tr><td>MCP registry</td><td><code>api/mcp-server.ts</code></td><td>28 tools · 6 namespaces · self-described</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================
+     CLOSER
+============================================================ -->
+<section class="title-slide">
+  <div class="eyebrow">A NEW PATTERN</div>
+  <h1 style="font-size: 2.5em;">
+    Speak firmware.<br/>
+    Share state.<br/>
+    Describe yourself.
+  </h1>
+  <div class="sub" style="margin-top: 1.5em;">
+    Instruments as software that other software — including LLMs — can drive,
+    observe, and reason about through the same protocol the physical hardware uses.
+  </div>
+  <div class="meta">
+    hamilton-star-twin · <span>docs/ARCHITECTURE.md</span> · <span>docs/architecture-slides.html</span>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.min.js"></script>
+<script>
+  // Palette pairs — Mermaid rebakes node colours into the SVG at
+  // render time, so a theme switch requires re-rendering every
+  // diagram with the new palette.
+  const MERMAID_THEMES = {
+    dark: {
+      darkMode: true,
+      background: "transparent",
+      primaryColor: "#1c2128",
+      primaryTextColor: "#e6edf3",
+      primaryBorderColor: "#30363d",
+      secondaryColor: "#161b22",
+      tertiaryColor: "#0d1117",
+      lineColor: "#8b949e",
+      textColor: "#e6edf3",
+      fontSize: "15px",
+      fontFamily: "Inter, sans-serif",
+      actorBkg: "#1c2128", actorBorder: "#58a6ff", actorTextColor: "#e6edf3",
+      actorLineColor: "#58a6ff",
+      signalColor: "#8b949e", signalTextColor: "#e6edf3",
+      labelBoxBkgColor: "#1c2128", labelBoxBorderColor: "#58a6ff", labelTextColor: "#e6edf3",
+      noteBkgColor: "#1c2128", noteBorderColor: "#f5be3c", noteTextColor: "#e6edf3",
+      stateBkg: "#1c2128", stateBorder: "#58a6ff", stateLabelColor: "#e6edf3",
+      labelColor: "#e6edf3",
+      compositeTitleBackground: "#161b22", altBackground: "#161b22",
+      nodeBorder: "#58a6ff",
+      clusterBkg: "transparent", clusterBorder: "#30363d",
+      defaultLinkColor: "#8b949e", edgeLabelBackground: "#161b22",
+      titleColor: "#e6edf3", nodeTextColor: "#e6edf3",
+      transitionColor: "#8b949e", transitionLabelColor: "#e6edf3",
+    },
+    light: {
+      darkMode: false,
+      background: "transparent",
+      primaryColor: "#ffffff",
+      primaryTextColor: "#1c2128",
+      primaryBorderColor: "#d0d7de",
+      secondaryColor: "#f6f8fa",
+      tertiaryColor: "#fbfcfd",
+      lineColor: "#57606a",
+      textColor: "#1c2128",
+      fontSize: "15px",
+      fontFamily: "Inter, sans-serif",
+      actorBkg: "#ffffff", actorBorder: "#0969da", actorTextColor: "#1c2128",
+      actorLineColor: "#0969da",
+      signalColor: "#57606a", signalTextColor: "#1c2128",
+      labelBoxBkgColor: "#ffffff", labelBoxBorderColor: "#0969da", labelTextColor: "#1c2128",
+      noteBkgColor: "#fff8c5", noteBorderColor: "#bf8700", noteTextColor: "#24292f",
+      stateBkg: "#ffffff", stateBorder: "#0969da", stateLabelColor: "#1c2128",
+      labelColor: "#1c2128",
+      compositeTitleBackground: "#f6f8fa", altBackground: "#f6f8fa",
+      nodeBorder: "#0969da",
+      clusterBkg: "transparent", clusterBorder: "#d0d7de",
+      defaultLinkColor: "#57606a", edgeLabelBackground: "#ffffff",
+      titleColor: "#1c2128", nodeTextColor: "#1c2128",
+      transitionColor: "#57606a", transitionLabelColor: "#1c2128",
+    },
+  };
+
+  // Stash the raw Mermaid source for every diagram BEFORE first
+  // render, so theme switches can rebuild with the new palette.
+  const mermaidSources = [];
+  document.querySelectorAll(".mermaid").forEach((el, i) => {
+    mermaidSources.push({ el, src: el.textContent.trim() });
+    el.dataset.idx = String(i);
+  });
+
+  function initMermaid(theme) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "base",
+      themeVariables: MERMAID_THEMES[theme],
+      flowchart: {
+        curve: "basis", padding: 20, nodeSpacing: 40, rankSpacing: 50,
+        htmlLabels: true,
+      },
+      sequence: {
+        diagramMarginX: 40, diagramMarginY: 20, actorMargin: 60,
+        boxMargin: 10, boxTextMargin: 5, noteMargin: 10, messageMargin: 35,
+        mirrorActors: true, bottomMarginAdj: 1, useMaxWidth: true, rightAngles: false,
+      },
+    });
+  }
+
+  async function renderAllMermaid(theme) {
+    initMermaid(theme);
+    for (let i = 0; i < mermaidSources.length; i++) {
+      const { el, src } = mermaidSources[i];
+      try {
+        const { svg } = await mermaid.render("mmd-" + theme + "-" + i, src);
+        el.innerHTML = svg;
+      } catch (err) {
+        console.error("mermaid render failed", i, err);
+      }
+    }
+  }
+
+  // --- Theme handling --------------------------------------------------
+  const THEME_KEY = "arch-slides-theme";
+  function currentTheme() {
+    return document.body.getAttribute("data-theme") || "dark";
+  }
+  function applyTheme(theme) {
+    document.body.setAttribute("data-theme", theme);
+    // The reveal.js stylesheet link switches between black.css / white.css.
+    const link = document.getElementById("theme");
+    if (link) {
+      link.href = theme === "light"
+        ? "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+        : "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css";
+    }
+    // highlight.js stylesheet — use a matching light variant.
+    const hljs = document.getElementById("hljs-theme");
+    if (hljs) {
+      hljs.href = theme === "light"
+        ? "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css"
+        : "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
+    }
+    const btn = document.querySelector(".theme-toggle");
+    if (btn) btn.textContent = theme === "light" ? "Dark" : "Light";
+    localStorage.setItem(THEME_KEY, theme);
+    renderAllMermaid(theme);
+  }
+  window.toggleTheme = function () {
+    applyTheme(currentTheme() === "light" ? "dark" : "light");
+  };
+
+  (async () => {
+    // Restore saved theme (default: dark) BEFORE first Mermaid render
+    // so the initial paint has the right palette.
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") applyTheme(saved);
+    else await renderAllMermaid("dark");
+
+    Reveal.initialize({
+      hash: true,
+      slideNumber: "c/t",
+      transition: "slide",
+      transitionSpeed: "default",
+      backgroundTransition: "fade",
+      controls: true,
+      progress: true,
+      // Virtual slide is 1280 × 920 at 3 % margin. Reveal auto-
+      // scales slides whose content exceeds the viewport so nothing
+      // gets clipped off the bottom. `minScale: 0.3` lets long
+      // slides shrink far enough to always fit; `center: true`
+      // keeps short slides vertically balanced.
+      center: true,
+      width: 1280,
+      height: 920,
+      margin: 0.03,
+      minScale: 0.3,
+      maxScale: 1.4,
+      plugins: [RevealHighlight],
+      keyboard: {
+        84: () => window.toggleTheme(),   // 'T' toggles theme
+      },
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "type": "Cos_96_Rd",
+  "category": "plate",
+  "description": "Corning 96-well round bottom microplate",
+  "manufacturer": "Corning",
+  "geometry": {
+    "rows": 8,
+    "columns": 12,
+    "wellPitch": 90,
+    "wellShape": "round_bottom",
+    "wellDepth": 112,
+    "wellDiameterTop": 69,
+    "wellDiameterBottom": 35,
+    "wellVolume": 3600
+  },
+  "dimensions": {
+    "length": 1276,
+    "width": 855,
+    "height": 144,
+    "flangeHeight": 25
+  },
+  "positions": {
+    "layout": "grid",
+    "offsetX": 145,
+    "offsetY": 115
+  },
+  "liquidHandling": {
+    "deadVolume": 100,
+    "touchOffDistance": 10,
+    "cLLDSensitivity": "medium",
+    "material": "polystyrene"
+  }
+}

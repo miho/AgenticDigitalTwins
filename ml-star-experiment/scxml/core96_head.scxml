@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_CoRe96Head">
+  <datamodel>
+    <data id="tips_fitted" expr="false"/>
+    <data id="tip_type" expr="-1"/>
+    <data id="volume_01ul" expr="0"/>
+    <data id="pos_x" expr="0"/>
+    <data id="pos_y" expr="0"/>
+    <data id="pos_z" expr="0"/>
+    <data id="y_min" expr="1054"/>
+    <data id="y_max" expr="5743"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized" editor:x="12" editor:y="12" editor:width="2382" editor:height="767" editor:label="operational" editor:color="#1e2a3a" editor:zIndex="0">
+    <state id="not_initialized" editor:x="2127" editor:y="662" editor:width="225" editor:height="75" editor:label="not_initialized" editor:color="#2a2a3c" editor:zIndex="1">
+      <transition target="no_tips" event="C0EI" editor:waypoints="42,724;42,542" editor:labelRotation="-90" editor:id="t_01KP5903YR6DQ32EF1T33HYBV3">
+        <assign location="tips_fitted" expr="false"/>
+        <assign location="volume_01ul" expr="0"/>
+        <assign location="last_error" expr="0"/>
+        <log expr="'Init 96 Head'" label="FW"/>
+      </transition>
+    </state>
+    <state id="idle" initial="no_tips" editor:x="140" editor:y="212" editor:width="1031" editor:height="408" editor:label="idle" editor:color="#1e2a3a" editor:zIndex="2">
+      <history id="idle_h96_history" type="deep" editor:x="30" editor:y="370" editor:width="50" editor:height="50" editor:label="H*" editor:color="#2a2a3c" editor:zIndex="10"/>
+      <!-- VENUS re-sends C0EI on every method run; real FW accepts
+           re-init idempotently while idle. -->
+      <transition target="idle" event="C0EI"/>
+      <transition target="moving96" event="C0EM" cond="_event.data.yh===undefined||(_event.data.yh&gt;=y_min&amp;&amp;_event.data.yh&lt;=y_max)" editor:waypoints="1263,546;1263,634" editor:id="t_01KP5903YRV9QK38T7H7F04P0B">
+        <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+        <assign location="pos_y" expr="_event.data.yh||pos_y"/>
+        <!-- Z lands at `za` (deposit height). `zh` is traverse; not a
+             final resting position. Fall through za → zh → current so
+             a query-only move keeps Z unchanged. -->
+        <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:(_event.data.zh!==undefined?_event.data.zh:pos_z)"/>
+        <log expr="'96 Head move X='+pos_x+' Y='+pos_y+' Z='+pos_z" label="FW"/>
+      </transition>
+      <transition target="error96" event="C0EM" cond="_event.data.yh!==undefined&amp;&amp;(_event.data.yh&lt;y_min||_event.data.yh&gt;y_max)" editor:waypoints="1831,501;1831,528" editor:id="t_01KP5903YR7N1V4D0BNAXY12GJ">
+        <assign location="last_error" expr="27"/>
+        <log expr="'Y out of range (error 27)'" label="ERROR"/>
+      </transition>
+      <transition target="idle" event="C0EV" editor:waypoints="1231,268;1231,202;80,202;80,550" editor:id="t_01KP5JQMYR5JRC8QKJAQDEDYEC">
+        <assign location="pos_z" expr="0"/>
+        <log expr="'96 Z-safe'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0QH" editor:waypoints="1241,278;1241,172;70,172;70,560" editor:id="t_01KP5JQMYR5KAAEGTCA1VMH59M">
+        <log expr="'96 Tip presence: '+(tips_fitted?'fitted':'none')" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0QI" editor:waypoints="1251,288;1251,142;60,142;60,570" editor:id="t_01KP5JQMYR1T0EDCF691R3XN7R">
+        <log expr="'96 Position: X='+pos_x+' Y='+pos_y+' Z='+pos_z" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0VC" editor:waypoints="1261,298;1261,112;50,112;50,580" editor:id="t_01KP5JQMYRE562FMPREN3XAGYT">
+        <log expr="'96 TADM status: ok'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0VB" editor:waypoints="1241,308;1241,630;80,630;80,590" editor:id="t_01KP5JQMYRH6CKE76AZ33X2PAA">
+        <log expr="'96 TADM error status: none'" label="FW"/>
+      </transition>
+      <state id="no_tips" editor:x="851" editor:y="262" editor:width="150" editor:height="75" editor:label="no_tips" editor:color="#2a2a3c" editor:zIndex="3">
+        <transition target="tips_empty" event="C0EP" editor:waypoints="968,524;968,526;182,526;182,450;660,450;660,425" editor:labelRotation="-90" editor:id="t_01KP5903YRDC6CHXB8D8EQ8MD0">
+          <assign location="tips_fitted" expr="true"/>
+          <assign location="tip_type" expr="_event.data.tt||0"/>
+          <!-- Real C0EP carries xs (X), yh (Y), za (pickup Z), zh (traverse). -->
+          <assign location="pos_x" expr="_event.data.xs!==undefined?_event.data.xs:(_event.data.xp||pos_x)"/>
+          <assign location="pos_y" expr="_event.data.yh!==undefined?_event.data.yh:(_event.data.yp||pos_y)"/>
+          <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:(_event.data.zh!==undefined?_event.data.zh:pos_z)"/>
+          <log expr="'96 Tip pickup type='+(_event.data.tt||0)+' at Z='+pos_z" label="FW"/>
+        </transition>
+        <transition target="error96" event="C0EA" editor:waypoints="1273,536;1273,565" editor:labelRotation="-90" editor:id="t_01KP5903YRX488DYSPK8V1YW79">
+          <assign location="last_error" expr="8"/>
+          <log expr="'No tips (error 08)'" label="ERROR"/>
+        </transition>
+        <transition target="error96" event="C0ED" editor:waypoints="1263,511;1263,533;1346,533;1346,547" editor:id="t_01KP5903YRMEXXGCVDC9XCGK6C">
+          <assign location="last_error" expr="8"/>
+        </transition>
+      </state>
+      <state id="tips_on" initial="tips_empty" editor:x="50" editor:y="45" editor:width="678" editor:height="211" editor:label="tips_on" editor:color="#1e2a3a" editor:zIndex="4">
+        <transition target="no_tips" event="C0ER" editor:waypoints="988,314;988,505" editor:id="t_01KP5903YRKR6NT48NFDET4050">
+          <assign location="tips_fitted" expr="false"/>
+          <assign location="volume_01ul" expr="0"/>
+          <!-- C0ER eject uses xs/yh/za/ze like C0EP. -->
+          <assign location="pos_x" expr="_event.data.xs!==undefined?_event.data.xs:pos_x"/>
+          <assign location="pos_y" expr="_event.data.yh!==undefined?_event.data.yh:pos_y"/>
+          <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:(_event.data.zh!==undefined?_event.data.zh:pos_z)"/>
+          <log expr="'96 Tip eject at X='+pos_x+' Z='+pos_z" label="FW"/>
+        </transition>
+        <transition target="washing96" event="C0EG" editor:waypoints="895,324;895,330" editor:id="t_01KP5903YRWAF6X5SCQ992J27B">
+          <assign location="volume_01ul" expr="0"/>
+          <log expr="'96 Wash'" label="FW"/>
+        </transition>
+        <state id="tips_empty" editor:x="473" editor:y="96" editor:width="175" editor:height="75" editor:label="tips_empty" editor:color="#2a2a3c" editor:zIndex="5">
+          <onentry>
+            <assign location="volume_01ul" expr="0"/>
+          </onentry>
+          <transition target="tips_loaded" event="C0EA" editor:id="t_01KP5903YRJXTQN1C3DTGG0ASM">
+            <assign location="volume_01ul" expr="_event.data.af||0"/>
+            <!-- C0EA also moves: xs (X), yh (Y), za (liquid-contact Z). -->
+            <assign location="pos_x" expr="_event.data.xs!==undefined?_event.data.xs:pos_x"/>
+            <assign location="pos_y" expr="_event.data.yh!==undefined?_event.data.yh:pos_y"/>
+            <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:pos_z"/>
+            <log expr="'96 Asp vol='+(_event.data.af||0)+' at Z='+pos_z" label="FW"/>
+          </transition>
+        </state>
+        <state id="tips_loaded" editor:x="80" editor:y="91" editor:width="200" editor:height="75" editor:label="tips_loaded" editor:color="#2a2a3c" editor:zIndex="6">
+          <transition target="tips_loaded" event="C0ED" cond="_event.data.da==2||_event.data.da==3" editor:waypoints="146.66666666666666,81;213.33333333333331,81" editor:id="t_01KP5903YR0PRZG1TCMC8EE9RG">
+            <assign location="volume_01ul" expr="Math.max(0,volume_01ul-(_event.data.df||0))"/>
+            <assign location="pos_x" expr="_event.data.xs!==undefined?_event.data.xs:pos_x"/>
+            <assign location="pos_y" expr="_event.data.yh!==undefined?_event.data.yh:pos_y"/>
+            <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:pos_z"/>
+            <log expr="'96 Partial disp at Z='+pos_z" label="FW"/>
+          </transition>
+          <transition target="tips_empty" event="C0ED" editor:waypoints="640,385;640,395" editor:labelRotation="-90" editor:id="t_01KP5903YR0J8KBS7Q1XWBE9C3">
+            <assign location="volume_01ul" expr="Math.max(0,volume_01ul-(_event.data.df||0))"/>
+            <assign location="pos_x" expr="_event.data.xs!==undefined?_event.data.xs:pos_x"/>
+            <assign location="pos_y" expr="_event.data.yh!==undefined?_event.data.yh:pos_y"/>
+            <assign location="pos_z" expr="_event.data.za!==undefined?_event.data.za:pos_z"/>
+            <log expr="'96 Jet disp at Z='+pos_z" label="FW"/>
+          </transition>
+        </state>
+      </state>
+    </state>
+    <state id="moving96" editor:x="1867" editor:y="597" editor:width="175" editor:height="75" editor:label="moving96" editor:color="#2a2a3c" editor:zIndex="7">
+      <onentry>
+        <send event="move96.done" delayexpr="_event.data._delay || '500ms'" id="move96_timer"/>
+      </onentry>
+      <transition target="idle_h96_history" event="move96.done" editor:waypoints="1844,659;1844,708;52,708;52,552" editor:labelRotation="-90" editor:id="t_01KP5903YRSRRBFHM0Q69ZNPJV"/>
+    </state>
+    <state id="washing96" editor:x="1359" editor:y="268" editor:width="175" editor:height="75" editor:label="washing96" editor:color="#2a2a3c" editor:zIndex="8">
+      <onentry>
+        <send event="wash96.done" delayexpr="_event.data._delay || '3000ms'" id="wash96_timer"/>
+      </onentry>
+      <transition target="tips_empty" event="wash96.done" editor:waypoints="1283,305;1283,78;52,78;52,314;660,314;660,380" editor:labelRotation="-90" editor:id="t_01KP5903YR1XKM95F95647FX7B"/>
+    </state>
+    <state id="error96" editor:x="1854" editor:y="497" editor:width="150" editor:height="75" editor:label="error96" editor:color="#2a2a3c" editor:zIndex="9">
+      <onentry>
+        <log expr="'96Head error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0EI" editor:waypoints="2124,547;2124,699" editor:id="t_01KP5903YRBCQ76K6R4DE1824M">
+        <assign location="last_error" expr="0"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

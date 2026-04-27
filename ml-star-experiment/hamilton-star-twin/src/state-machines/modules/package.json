@@ -1,0 +1,16 @@
+{
+  "name": "heater-shaker-s-m",
+  "version": "1.0.0",
+  "description": "Generated SCXML state machine: HeaterShakerSM",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "scxml",
+    "state-machine",
+    "generated"
+  ],
+  "license": "MIT"
+}

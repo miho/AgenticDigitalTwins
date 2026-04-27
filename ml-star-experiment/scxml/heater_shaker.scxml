@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_HeaterShaker">
+  <datamodel>
+    <data id="target_temp_01c" expr="0"/>
+    <data id="current_temp_01c" expr="250"/>
+    <data id="shaking" expr="false"/>
+    <data id="shake_speed" expr="0"/>
+    <data id="plate_locked" expr="false"/>
+    <data id="temp_active" expr="false"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized">
+    <state id="not_initialized">
+      <transition target="idle_hhs" event="T1SI">
+        <assign location="shaking" expr="false"/>
+        <assign location="temp_active" expr="false"/>
+        <assign location="plate_locked" expr="false"/>
+        <assign location="last_error" expr="0"/>
+        <log expr="'HHS: Shaker initialized'" label="FW"/>
+      </transition>
+      <!-- Lock init also initializes -->
+      <transition target="idle_hhs" event="T1LI">
+        <assign location="plate_locked" expr="false"/>
+        <assign location="last_error" expr="0"/>
+        <log expr="'HHS: Lock initialized'" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="idle_hhs">
+      <!-- Temperature control -->
+      <transition target="heating" event="T1TA">
+        <assign location="target_temp_01c" expr="_event.data.ta||0"/>
+        <assign location="temp_active" expr="true"/>
+        <log expr="'HHS: Set temp target='+((_event.data.ta||0)/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="waiting_temp" event="T1TW">
+        <assign location="target_temp_01c" expr="_event.data.ta||target_temp_01c"/>
+        <assign location="temp_active" expr="true"/>
+        <log expr="'HHS: Wait for temp='+((_event.data.ta||target_temp_01c)/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1TO">
+        <assign location="temp_active" expr="false"/>
+        <assign location="target_temp_01c" expr="0"/>
+        <log expr="'HHS: Temperature off'" label="FW"/>
+      </transition>
+
+      <!-- Shaker control -->
+      <transition target="shaking_state" event="T1SA">
+        <assign location="shaking" expr="true"/>
+        <assign location="shake_speed" expr="_event.data.sv||0"/>
+        <log expr="'HHS: Start shaking speed='+(_event.data.sv||0)" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1SS">
+        <assign location="shaking" expr="false"/>
+        <assign location="shake_speed" expr="0"/>
+        <log expr="'HHS: Stop shaking'" label="FW"/>
+      </transition>
+
+      <!-- Shaker parameters -->
+      <transition target="idle_hhs" event="T1SO">
+        <log expr="'HHS: Shaker params set'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1ST">
+        <log expr="'HHS: Shaker time set'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1SB">
+        <log expr="'HHS: Shaker accel set'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1SC">
+        <log expr="'HHS: Shaker decel set'" label="FW"/>
+      </transition>
+
+      <!-- Plate lock -->
+      <transition target="idle_hhs" event="T1LA">
+        <assign location="plate_locked" expr="true"/>
+        <log expr="'HHS: Plate locked'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1LP">
+        <assign location="plate_locked" expr="true"/>
+        <log expr="'HHS: Plate lock activated'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1LO">
+        <assign location="plate_locked" expr="false"/>
+        <log expr="'HHS: Plate unlocked'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1LS">
+        <log expr="'HHS: Lock status: '+(plate_locked?'locked':'open')" label="FW"/>
+      </transition>
+
+      <!-- Queries -->
+      <transition target="idle_hhs" event="T1RA">
+        <log expr="'HHS: Status — temp='+(current_temp_01c/10)+'C shaking='+shaking+' locked='+plate_locked" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1RQ">
+        <log expr="'HHS: Module status OK'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1RF">
+        <log expr="'HHS: Firmware version 1.0'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1RT">
+        <log expr="'HHS: Temp='+(current_temp_01c/10)+'C target='+(target_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1QC">
+        <log expr="'HHS: Current temp='+(current_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1QD">
+        <log expr="'HHS: Target temp='+(target_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1QE">
+        <log expr="'HHS: Temp active='+temp_active" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="heating">
+      <onentry>
+        <send event="hhs_temp.reached" delayexpr="_event.data._delay || '5000ms'" id="heat_timer"/>
+      </onentry>
+      <transition target="idle_hhs" event="hhs_temp.reached">
+        <assign location="current_temp_01c" expr="target_temp_01c"/>
+        <log expr="'HHS: Temperature reached '+(target_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1TO">
+        <assign location="temp_active" expr="false"/>
+        <assign location="target_temp_01c" expr="0"/>
+        <log expr="'HHS: Temperature off'" label="FW"/>
+      </transition>
+      <!-- Can still shake while heating -->
+      <transition target="heating" event="T1SA">
+        <assign location="shaking" expr="true"/>
+        <assign location="shake_speed" expr="_event.data.sv||0"/>
+        <log expr="'HHS: Start shaking while heating'" label="FW"/>
+      </transition>
+      <transition target="heating" event="T1SS">
+        <assign location="shaking" expr="false"/>
+        <log expr="'HHS: Stop shaking'" label="FW"/>
+      </transition>
+      <!-- Queries while heating -->
+      <transition target="heating" event="T1RT">
+        <log expr="'HHS: Temp='+(current_temp_01c/10)+'C target='+(target_temp_01c/10)+'C (heating)'" label="FW"/>
+      </transition>
+      <transition target="heating" event="T1QC">
+        <log expr="'HHS: Current temp='+(current_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="waiting_temp">
+      <onentry>
+        <send event="hhs_temp.reached" delayexpr="_event.data._delay || '10000ms'" id="wait_temp_timer"/>
+      </onentry>
+      <transition target="idle_hhs" event="hhs_temp.reached">
+        <assign location="current_temp_01c" expr="target_temp_01c"/>
+        <log expr="'HHS: Temperature reached '+(target_temp_01c/10)+'C'" label="FW"/>
+      </transition>
+      <transition target="idle_hhs" event="T1TO">
+        <assign location="temp_active" expr="false"/>
+        <assign location="target_temp_01c" expr="0"/>
+        <log expr="'HHS: Temperature off'" label="FW"/>
+      </transition>
+      <transition target="error_hhs" event="hhs_temp.error">
+        <assign location="last_error" expr="99"/>
+        <log expr="'HHS: Temperature timeout'" label="ERROR"/>
+      </transition>
+    </state>
+
+    <state id="shaking_state">
+      <transition target="idle_hhs" event="T1SS">
+        <assign location="shaking" expr="false"/>
+        <assign location="shake_speed" expr="0"/>
+        <log expr="'HHS: Shaking stopped'" label="FW"/>
+      </transition>
+      <!-- Can set temp while shaking -->
+      <transition target="shaking_state" event="T1TA">
+        <assign location="target_temp_01c" expr="_event.data.ta||0"/>
+        <assign location="temp_active" expr="true"/>
+        <log expr="'HHS: Set temp while shaking'" label="FW"/>
+      </transition>
+      <transition target="shaking_state" event="T1RT">
+        <log expr="'HHS: Temp='+(current_temp_01c/10)+'C (shaking at '+shake_speed+')'" label="FW"/>
+      </transition>
+    </state>
+
+    <state id="error_hhs">
+      <onentry>
+        <log expr="'HHS error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="T1SI">
+        <assign location="last_error" expr="0"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

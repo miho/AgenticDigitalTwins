@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="sys_off" name="HamiltonSTAR_Master">
+  <datamodel>
+    <data id="instrument_initialized" expr="false"/>
+    <data id="left_arm_x" expr="0"/>
+    <data id="right_arm_x" expr="0"/>
+    <data id="cover_locked" expr="false"/>
+    <data id="cover_control_enabled" expr="true"/>
+    <data id="single_step_mode" expr="false"/>
+    <data id="not_stop_active" expr="false"/>
+    <data id="system_error" expr="0"/>
+    <data id="interior_light" expr="0"/>
+    <data id="logo_light" expr="0"/>
+    <data id="status_light_color" expr="0"/>
+    <data id="status_light_progress" expr="0"/>
+  </datamodel>
+  <state id="sys_off" editor:x="741" editor:y="2518.0200000000004" editor:width="150" editor:height="75" editor:label="sys_off" editor:color="#2a2a3c" editor:zIndex="0">
+    <!-- VENUS's init sequence can arrive with any of the five module-init
+         commands as the entry point (order varies — trace shows C0II
+         before C0VI). All five must move us into sys_initializing so the
+         twin's state machine tracks initialization even when VENUS, not
+         our own UI, drives the sequence. -->
+    <transition target="sys_initializing" event="C0VI" editor:id="t_01KP46SXEHX45HSJ5JZ7AZYTRA">
+      <log expr="'Pre-initialize'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_initializing" event="C0DI">
+      <log expr="'Pre-initialize (C0DI)'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_initializing" event="C0EI">
+      <log expr="'Pre-initialize (C0EI)'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_initializing" event="C0II">
+      <log expr="'Pre-initialize (C0II)'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_initializing" event="C0FI">
+      <log expr="'Pre-initialize (C0FI)'" label="SYSTEM"/>
+    </transition>
+  </state>
+  <state id="sys_initializing" editor:x="1054" editor:y="2506.0200000000004" editor:width="225" editor:height="75" editor:label="sys_initializing" editor:color="#2a2a3c" editor:zIndex="1">
+    <onentry>
+      <send event="init.done" delayexpr="'1500ms'"/>
+      <log expr="'System initializing...'" label="SYSTEM"/>
+    </onentry>
+    <transition target="sys_ready" event="init.done" editor:waypoints="906,2531.0200000000004;906,2497.0200000000004;388,2497.0200000000004;388,2531.0200000000004" editor:labelRotation="-90" editor:id="t_01KP46SXEHDYXZMWFGKGXM5T8B"/>
+    <!-- Additional init commands arriving during the 1500ms init delay
+         stay in the state (re-init is idempotent for the real FW). -->
+    <transition target="sys_initializing" event="C0VI"/>
+    <transition target="sys_initializing" event="C0DI"/>
+    <transition target="sys_initializing" event="C0EI"/>
+    <transition target="sys_initializing" event="C0II"/>
+    <transition target="sys_initializing" event="C0FI"/>
+  </state>
+  <state id="sys_ready" editor:x="12" editor:y="2506.0200000000004" editor:width="175" editor:height="75" editor:label="sys_ready" editor:color="#2a2a3c" editor:zIndex="2">
+    <onentry>
+      <assign location="instrument_initialized" expr="true"/>
+      <log expr="'Instrument ready'" label="SYSTEM"/>
+    </onentry>
+    <!-- VENUS re-sends init commands on every method run. Real FW
+         accepts them idempotently when already initialised, so
+         self-loop here rather than rejecting or re-running homing. -->
+    <transition target="sys_ready" event="C0VI"/>
+    <transition target="sys_ready" event="C0DI"/>
+    <transition target="sys_ready" event="C0EI"/>
+    <transition target="sys_ready" event="C0II"/>
+    <transition target="sys_ready" event="C0FI"/>
+    <transition target="sys_ready" event="C0KX" editor:waypoints="98.94267515923559,2496.0200000000004;100.05732484076425,2496.0200000000004" editor:id="t_01KP46SXEHJEW1JAR1YKR4W3NV">
+      <assign location="left_arm_x" expr="_event.data.xs || left_arm_x"/>
+    </transition>
+    <transition target="sys_ready" event="C0KR" editor:waypoints="97.82802547770693,2464.0200000000004;101.17197452229291,2464.0200000000004" editor:id="t_01KP46SXEHMB36R5BJYTM1HMS7">
+      <assign location="right_arm_x" expr="_event.data.xs || right_arm_x"/>
+    </transition>
+    <transition target="sys_ready" event="C0CO" editor:waypoints="96.71337579617827,2432.0200000000004;102.28662420382157,2432.0200000000004" editor:id="t_01KP46SXEH4F66X3178JVDTJ1M">
+      <assign location="cover_locked" expr="true"/>
+      <log expr="'Cover locked'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0HO" editor:waypoints="95.59872611464961,2400.0200000000004;103.40127388535024,2400.0200000000004" editor:id="t_01KP46SXEHKFYG029F0KXWJMK4">
+      <assign location="cover_locked" expr="false"/>
+      <log expr="'Cover unlocked'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0ST" editor:waypoints="94.48407643312095,2368.0200000000004;104.5159235668789,2368.0200000000004" editor:id="t_01KP46SXEH8KJCYVTC3P68NR4Q">
+      <log expr="'Status light'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RW" editor:waypoints="93.36942675159229,2336.0200000000004;105.63057324840756,2336.0200000000004" editor:id="t_01KP5JRXHXQVAKZ5XX0SK1W6C2">
+      <log expr="'Read port'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RF" editor:waypoints="92.25477707006362,2304.0200000000004;106.74522292993622,2304.0200000000004" editor:id="t_01KP5JRXHXBEMQWH5HGCYCVA7Q">
+      <log expr="'Firmware version: V1.00 STAR Digital Twin 2026-04-14'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0OS" editor:waypoints="91.14012738853496,2272.0200000000004;107.85987261146488,2272.0200000000004" editor:id="t_01KP5JRXHXM0BHEEECRB5JD5NA">
+      <log expr="'Set port'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RE" editor:waypoints="90.0254777070063,2240.0200000000004;108.97452229299354,2240.0200000000004" editor:id="t_01KP5JRXHXEMXKAWFFSVWBA80K">
+      <log expr="'Request error codes'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RA" editor:waypoints="88.91082802547764,2208.0200000000004;110.0891719745222,2208.0200000000004" editor:id="t_01KP5JRXHX47QBC3E8NNJX46HE">
+      <log expr="'Request parameter'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QB" editor:waypoints="87.79617834394898,2176.0200000000004;111.20382165605086,2176.0200000000004" editor:id="t_01KP5JRXHXPCV3FX6NG8Y1TT7K">
+      <log expr="'Request board type'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0MU" editor:waypoints="86.68152866242032,2144.0200000000004;112.31847133757952,2144.0200000000004" editor:id="t_01KP5JRXHXFJ83ZA2PAK8R6T6D">
+      <log expr="'Request supply voltage'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QW" editor:waypoints="85.56687898089166,2112.0200000000004;113.43312101910819,2112.0200000000004" editor:id="t_01KP5JRXHXYCP2MDM76JEB9C8F">
+      <log expr="'Init status: '+instrument_initialized" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0VP" editor:waypoints="84.452229299363,2080.0200000000004;114.54777070063685,2080.0200000000004" editor:id="t_01KP5JRXHXXPAYKXGPV4NRHZEB">
+      <log expr="'Last faulty param'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RQ" editor:waypoints="83.33757961783434,2048.0200000000004;115.66242038216551,2048.0200000000004" editor:id="t_01KP5JRXHXYTVM43GSHBGNWXSP">
+      <log expr="'Master status'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0SR" editor:waypoints="82.22292993630568,2016.0200000000004;116.77707006369417,2016.0200000000004" editor:id="t_01KP5JRXHX67V2N2JRQMXMQEM8">
+      <log expr="'Presence sensor count'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QV" editor:waypoints="81.10828025477701,1984.0200000000004;117.89171974522283,1984.0200000000004" editor:id="t_01KP5JRXHXMRAV9EQ0T4DPMGN2">
+      <log expr="'EEPROM check'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AM" editor:waypoints="79.99363057324835,1952.0200000000004;119.00636942675149,1952.0200000000004" editor:id="t_01KP5JRXHXKVA4D2TEJEX02JSB">
+      <assign location="single_step_mode" expr="!!(_event.data.am)"/>
+      <log expr="'Single step mode: '+(_event.data.am?'ON':'OFF')" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0NS" editor:waypoints="78.87898089171969,1920.0200000000004;120.12101910828015,1920.0200000000004" editor:id="t_01KP5JRXHXHAMDQQYHDW1S29ZJ">
+      <log expr="'Next step (single step)'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0HD" editor:waypoints="77.76433121019103,1888.0200000000004;121.23566878980881,1888.0200000000004" editor:id="t_01KP5JRXHXSAJ3262JHX4X1B1H">
+      <log expr="'Halt'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AZ" editor:waypoints="76.64968152866237,1856.0200000000004;122.35031847133747,1856.0200000000004" editor:id="t_01KP5JRXHX957ZNRE9MEKXRA2Z">
+      <log expr="'Save cycle counters'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AB" editor:waypoints="75.53503184713371,1824.0200000000004;123.46496815286613,1824.0200000000004" editor:id="t_01KP5JRXHX95FRVVT0CMA9XQY2">
+      <assign location="not_stop_active" expr="true"/>
+      <log expr="'Emergency stop ON'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AW" editor:waypoints="74.42038216560505,1792.0200000000004;124.5796178343948,1792.0200000000004" editor:id="t_01KP5JRXHXXR7WPXASH9FSFQ05">
+      <assign location="not_stop_active" expr="false"/>
+      <log expr="'Emergency stop OFF'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0SI" editor:waypoints="73.30573248407639,1760.0200000000004;125.69426751592346,1760.0200000000004" editor:id="t_01KP5JRXHXCM4GECN68HN53KTD">
+      <log expr="'Store installation data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AV" editor:waypoints="72.19108280254773,1728.0200000000004;126.80891719745212,1728.0200000000004" editor:id="t_01KP5JRXHXCTAMQ5QJHNKK30K7">
+      <log expr="'Store verification data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AT" editor:waypoints="71.07643312101906,1696.0200000000004;127.92356687898078,1696.0200000000004" editor:id="t_01KP5JRXHX1Z0YXY4S0BHBX56Z">
+      <log expr="'Additional timestamp'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AK" editor:waypoints="69.9617834394904,1664.0200000000004;129.03821656050945,1664.0200000000004" editor:id="t_01KP5JRXHX29MC2CP5Z7G9QFFP">
+      <log expr="'Set instrument config'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0DD" editor:waypoints="68.84713375796174,1632.0200000000004;130.1528662420381,1632.0200000000004" editor:id="t_01KP5JRXHX7ZFJYR6ZPRTKDY6E">
+      <log expr="'Set deck data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0XK" editor:waypoints="67.73248407643308,1600.0200000000004;131.26751592356675,1600.0200000000004" editor:id="t_01KP5JRXHXC45ZQ4C32SP34JH7">
+      <log expr="'Configure node names'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0TT" editor:waypoints="66.61783439490442,1568.0200000000004;132.38216560509542,1568.0200000000004" editor:id="t_01KP5JRXHX07SJNJ3KCV668QQV">
+      <log expr="'Tip definition: type='+(_event.data.tt||0)" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AG" editor:waypoints="65.50318471337576,1536.0200000000004;133.4968152866241,1536.0200000000004" editor:id="t_01KP5JRXHXTYNN4DSTR86KC2QW">
+      <log expr="'Set X-offset iSWAP'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AF" editor:waypoints="64.3885350318471,1504.0200000000004;134.61146496815275,1504.0200000000004" editor:id="t_01KP5JRXHX8NXPFG9RE5B164VE">
+      <log expr="'Set X-offset 96 Head'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AD" editor:waypoints="63.27388535031844,1472.0200000000004;135.7261146496814,1472.0200000000004" editor:id="t_01KP5JRXHXEQH0NHDFWEFBF16P">
+      <log expr="'Set X-offset 384 Head'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AN" editor:waypoints="62.159235668789776,1440.0200000000004;136.84076433121007,1440.0200000000004" editor:id="t_01KP5JRXHXRCM4T8V46REFM392">
+      <log expr="'Set X-offset Nano'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AJ" editor:waypoints="61.044585987261115,1408.0200000000004;137.95541401273874,1408.0200000000004" editor:id="t_01KP5JRXHX2SFDMJRDBTTYXM2T">
+      <log expr="'Save PIP validation'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AE" editor:waypoints="59.929936305732454,1376.0200000000004;139.0700636942674,1376.0200000000004" editor:id="t_01KP5JRXHXA5XF2D54AHWB5SXC">
+      <log expr="'Save XL validation'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0IP" editor:waypoints="58.81528662420379,1344.0200000000004;140.18471337579606,1344.0200000000004" editor:id="t_01KP5JRXHX251HQ8YXR7V5Y3RD">
+      <log expr="'Save TCP/IP params'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AO" editor:waypoints="57.70063694267513,1312.0200000000004;141.29936305732474,1312.0200000000004" editor:id="t_01KP5JRXHXC87P622K6DW26HH8">
+      <log expr="'Save download date'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0BT" editor:waypoints="56.58598726114647,1280.0200000000004;142.41401273885342,1280.0200000000004" editor:id="t_01KP5JRXHX1ARMMV9BDM2380SE">
+      <log expr="'Save technical status'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AU" editor:waypoints="55.47133757961781,1248.0200000000004;143.5286624203821,1248.0200000000004" editor:id="t_01KP5JRXHX4G5VRTPF0Z0EZTNE">
+      <log expr="'Set USB device number'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QT" editor:waypoints="54.35668789808915,1216.0200000000004;144.64331210191077,1216.0200000000004" editor:id="t_01KP5JRXHXQPDG33PW79KHM9T8">
+      <log expr="'Request technical status'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RI" editor:waypoints="53.24203821656049,1184.0200000000004;145.75796178343944,1184.0200000000004" editor:id="t_01KP5JRXHXX15Q60FKDSHMS4GD">
+      <log expr="'Request installation data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RO" editor:waypoints="52.12738853503183,1152.0200000000004;146.87261146496812,1152.0200000000004" editor:id="t_01KP5JRXHXW0BPA483EM0JRG1M">
+      <log expr="'Request download date'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RV" editor:waypoints="51.012738853503166,1120.0200000000004;147.9872611464968,1120.0200000000004" editor:id="t_01KP5JRXHXJ7EBB0BRN7YT664B">
+      <log expr="'Request verification data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RS" editor:waypoints="49.898089171974505,1088.0200000000004;149.10191082802547,1088.0200000000004" editor:id="t_01KP5JRXHX8NTY4D2NNDF67FV7">
+      <log expr="'Request timestamp'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RJ" editor:waypoints="48.78343949044584,1056.0200000000004;150.21656050955414,1056.0200000000004" editor:id="t_01KP5JRXHYPXXGGA5QCSNX5V8B">
+      <log expr="'Request PIP validation'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0UJ" editor:waypoints="47.66878980891718,1024.0200000000004;151.33121019108282,1024.0200000000004" editor:id="t_01KP5JRXHYBTZC4J5G59MJFJ4X">
+      <log expr="'Request XL validation'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RM" editor:waypoints="46.55414012738852,992.0200000000004;152.4458598726115,992.0200000000004" editor:id="t_01KP5JRXHY1B86QRVY1BX7K640">
+      <log expr="'Request instrument config'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QM" editor:waypoints="45.43949044585986,960.0200000000004;153.56050955414017,960.0200000000004" editor:id="t_01KP5JRXHYNR1AY4JK08P7PBST">
+      <log expr="'Request extended config'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0VD" editor:waypoints="44.3248407643312,928.0200000000004;154.67515923566884,928.0200000000004" editor:id="t_01KP5JRXHYSSPCEEW1EFX8A9JS">
+      <log expr="'Request deck data'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RK" editor:waypoints="43.21019108280254,896.0200000000004;155.78980891719752,896.0200000000004" editor:id="t_01KP5JRXHY4C9A2QH2VK32PYKJ">
+      <log expr="'Request node names'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0JX" editor:waypoints="42.09554140127388,864.0200000000004;156.9044585987262,864.0200000000004" editor:id="t_01KP5JRXHYNC0HYF7HR2MBR0PD">
+      <assign location="left_arm_x" expr="_event.data.xs || left_arm_x"/>
+      <log expr="'Left arm X absolute (UNSAFE): '+left_arm_x" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0JS" editor:waypoints="40.980891719745216,832.0200000000004;158.01910828025487,832.0200000000004" editor:id="t_01KP5JRXHY8ZP2S7PSHYKKKM0D">
+      <assign location="right_arm_x" expr="_event.data.xs || right_arm_x"/>
+      <log expr="'Right arm X absolute (UNSAFE): '+right_arm_x" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0BA" editor:waypoints="39.866242038216555,800.0200000000004;159.13375796178354,800.0200000000004" editor:id="t_01KP5JRXHYCT3R1BRDEA7PPW5C">
+      <log expr="'Occupy area'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0BB" editor:waypoints="38.751592356687894,768.0200000000004;160.24840764331222,768.0200000000004" editor:id="t_01KP5JRXHY0XS2MRH62AZM7NBE">
+      <log expr="'Release area'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0BC" editor:waypoints="37.63694267515923,736.0200000000004;161.3630573248409,736.0200000000004" editor:id="t_01KP5JRXHY5D0V83PPNY2PXPGZ">
+      <log expr="'Release all areas'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RX" editor:waypoints="36.52229299363057,704.0200000000004;162.47770700636957,704.0200000000004" editor:id="t_01KP5JRXHYQWFH3TK8ZG6481PB">
+      <log expr="'Left arm X: '+left_arm_x" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QX" editor:waypoints="35.40764331210191,672.0200000000004;163.59235668789825,672.0200000000004" editor:id="t_01KP5JRXHYAZCPCM2ZN73NP6G8">
+      <log expr="'Right arm X: '+right_arm_x" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RU" editor:waypoints="34.29299363057325,640.0200000000004;164.70700636942692,640.0200000000004" editor:id="t_01KP5JRXHYY269WCYVXXFRQGJZ">
+      <log expr="'Request X ranges'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0UA" editor:waypoints="33.17834394904459,608.0200000000004;165.8216560509556,608.0200000000004" editor:id="t_01KP5JRXHYTXWY41PRYJPVGFDS">
+      <log expr="'Request arm wrap size'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0SS" editor:waypoints="32.06369426751593,576.0200000000004;166.93630573248427,576.0200000000004" editor:id="t_01KP5JRXHY6M8N0YTHS4TVG4FS">
+      <assign location="interior_light" expr="_event.data.sp || 0"/>
+      <log expr="'Interior light: '+(_event.data.sp||0)+'%'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0SL" editor:waypoints="30.949044585987266,544.0200000000004;168.05095541401295,544.0200000000004" editor:id="t_01KP5JRXHYM3DMXXEAW2QRZJ23">
+      <assign location="logo_light" expr="_event.data.sp || 0"/>
+      <log expr="'Logo light: '+(_event.data.sp||0)+'%'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0WL" editor:waypoints="29.834394904458605,512.0200000000004;169.16560509554162,512.0200000000004" editor:id="t_01KP5JRXHYGT3N9VKMASK5FFZY">
+      <log expr="'Query logo light: '+logo_light" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0WJ" editor:waypoints="28.719745222929944,480.02000000000044;170.2802547770703,480.02000000000044" editor:id="t_01KP5JRXHYXGHJ03QRGGMGKCW4">
+      <log expr="'Query interior light: '+interior_light" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0CD" editor:waypoints="27.60509554140128,448.02000000000044;171.39490445859897,448.02000000000044" editor:id="t_01KP5JRXHYFWBHASB911X08N3S">
+      <assign location="cover_control_enabled" expr="false"/>
+      <log expr="'Cover control disabled'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0CE" editor:waypoints="26.490445859872615,416.02000000000044;172.50955414012765,416.02000000000044" editor:id="t_01KP5JRXHYK0M3W54Z2EGD1SGK">
+      <assign location="cover_control_enabled" expr="true"/>
+      <log expr="'Cover control enabled'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0QC" editor:waypoints="25.375796178343954,384.02000000000044;173.62420382165632,384.02000000000044" editor:id="t_01KP5JRXHY2AE7QQBED9S7X5Q8">
+      <log expr="'Cover position: '+(cover_locked?'locked':'unlocked')" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0OR" editor:waypoints="24.261146496815293,352.02000000000044;174.738853503185,352.02000000000044" editor:id="t_01KP5JRXHY5DH0FHTSSYARQVYX">
+      <log expr="'Reset output'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AC" editor:waypoints="23.14649681528663,320.02000000000044;175.85350318471367,320.02000000000044" editor:id="t_01KP5JRXHYRH20HKJK57N6W1TN">
+      <log expr="'Set traffic lights'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AP" editor:waypoints="22.031847133757964,288.02000000000044;176.96815286624235,288.02000000000044" editor:id="t_01KP5JRXHYHT38GTN8Y5RMSJXQ">
+      <log expr="'Switch download/run mode'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0DE" editor:waypoints="20.917197452229303,256.02000000000044;178.08280254777102,256.02000000000044" editor:id="t_01KP5JRXHYFTBFQ4P95B4FTCHZ">
+      <log expr="'Start download'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0DP" editor:waypoints="19.80254777070064,224.02000000000044;179.1974522292997,224.02000000000044" editor:id="t_01KP5JRXHY6NM8RF68CH5WRNMJ">
+      <log expr="'Program flash line'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0GO" editor:waypoints="18.687898089171977,192.02000000000044;180.31210191082837,192.02000000000044" editor:id="t_01KP5JRXHYT71QR9CAX11YVVFE">
+      <log expr="'Sync command'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AH" editor:waypoints="17.573248407643312,160.02000000000044;181.42675159235705,160.02000000000044" editor:id="t_01KP5JRXHYQ45TXD9G2Q8XS7ZF">
+      <log expr="'Wait sync PIP'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AL" editor:waypoints="16.45859872611465,128.02000000000044;182.54140127388573,128.02000000000044" editor:id="t_01KP5JRXHYYDS037GWA3DE5ANC">
+      <log expr="'Wait sync XL'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0RH" editor:waypoints="15.343949044585989,96.02000000000044;183.6560509554144,96.02000000000044" editor:id="t_01KP5JRXHYRVY6AXVSR2W9N8T9">
+      <log expr="'Heap query'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AI" editor:waypoints="14.229299363057326,64.02000000000044;184.77070063694308,64.02000000000044" editor:id="t_01KP5JRXHYTGZMHGXZY5GZDRA6">
+      <log expr="'Reset'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_ready" event="C0AA" editor:waypoints="13.114649681528663,32.02000000000044;185.88535031847175,32.02000000000044" editor:id="t_01KP5JRXHYS8A414GAGA63VMYG">
+      <log expr="'Debug params'" label="SYSTEM"/>
+    </transition>
+    <transition target="sys_error" event="system.error" editor:id="t_01KP5JRXHYWKBXSJPV5T5E494F">
+      <assign location="system_error" expr="_event.data.code || 99"/>
+    </transition>
+  </state>
+  <state id="sys_error" editor:x="403" editor:y="2518.0200000000004" editor:width="175" editor:height="75" editor:label="sys_error" editor:color="#2a2a3c" editor:zIndex="3">
+    <onentry>
+      <log expr="'System error ' + system_error" label="ERROR"/>
+    </onentry>
+    <transition target="sys_off" event="C0VI" editor:id="t_01KP46SXEJQXE3TTSDDY67GSRK">
+      <assign location="system_error" expr="0"/>
+      <assign location="instrument_initialized" expr="false"/>
+    </transition>
+  </state>
+</scxml>

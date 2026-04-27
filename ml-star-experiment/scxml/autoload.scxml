@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_AutoLoad">
+  <datamodel>
+    <data id="carrier_type" expr="&apos;none&apos;"/>
+    <data id="carrier_barcode" expr="&apos;&apos;"/>
+    <data id="carriers_on_deck" expr="0"/>
+    <data id="max_carriers" expr="54"/>
+    <data id="tray_occupied" expr="false"/>
+    <data id="last_error" expr="0"/>
+    <!-- Current track of the autoload carriage. 0 = parked at the
+         front-loading tray (home). 1..max_carriers = aligned with that
+         deck track, used both for loads-in-progress and for the "last
+         track touched" indicator after load.done / unload.done. -->
+    <data id="pos_track" expr="0"/>
+    <!-- Track the carriage is currently moving toward. Equals pos_track
+         while idle; diverges during loading/unloading states. -->
+    <data id="target_track" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized" editor:x="12" editor:y="12" editor:width="1340" editor:height="707.02" editor:label="operational" editor:color="#1e2a3a" editor:zIndex="0">
+    <state id="not_initialized" editor:x="1085" editor:y="530.02" editor:width="225" editor:height="75" editor:label="not_initialized" editor:color="#2a2a3c" editor:zIndex="1">
+      <transition target="idle_al" event="C0II" editor:waypoints="602,567.02;602,507.02" editor:id="t_01KP5AJD6CBG68MW4PZX7EXYKB">
+        <assign location="carriers_on_deck" expr="0"/>
+        <assign location="last_error" expr="0"/>
+        <assign location="pos_track" expr="0"/>
+        <assign location="target_track" expr="0"/>
+        <log expr="'Init AutoLoad'" label="FW"/>
+      </transition>
+    </state>
+    <state id="idle_al" editor:x="356" editor:y="435.02" editor:width="150" editor:height="75" editor:label="idle_al" editor:color="#2a2a3c" editor:zIndex="2">
+      <!-- VENUS re-sends C0II on every method run. Real FW accepts
+           re-init idempotently while idle, so self-loop here rather
+           than reject with error 15 "Not allowed parameter combination". -->
+      <transition target="idle_al" event="C0II"/>
+      <transition target="identifying" event="C0CI" editor:waypoints="612,500.02;612,517.02" editor:id="t_01KP5AJD6CVSEXPWCRG4KYGNGE">
+        <log expr="'Identify carrier'" label="FW"/>
+      </transition>
+      <transition target="loading" event="C0CL" editor:id="t_01KP5AJD6C9SY6XN85RTJWNGJZ">
+        <!-- `pq<track>` is the target track the carriage must reach. VENUS
+             omits it on abstract loads; fall back to 1 so the carriage at
+             least moves off the home tray in the UI. -->
+        <assign location="target_track" expr="_event.data.pq!==undefined?_event.data.pq:1"/>
+        <log expr="'Load carrier to track '+target_track" label="FW"/>
+      </transition>
+      <transition target="unloading" event="C0CR" cond="carriers_on_deck &gt; 0" editor:waypoints="533,470.02;533,353.02;778,353.02;778,323.02" editor:id="t_01KP5AJD6DQYJJM6JR4BQ8JMDB">
+        <!-- C0CR returns the carriage to the tray; target is always 0
+             regardless of which track the carrier came from. -->
+        <assign location="target_track" expr="0"/>
+        <log expr="'Unload carrier from track '+pos_track" label="FW"/>
+      </transition>
+      <transition target="error_al" event="C0CR" cond="carriers_on_deck == 0" editor:waypoints="533,515.02;533,583.02;764,583.02;764,639.02" editor:id="t_01KP5AJD6D9817R39D7PKTX4N5">
+        <assign location="last_error" expr="9"/>
+        <log expr="'No carrier on deck (error 09)'" label="ERROR"/>
+      </transition>
+      <transition target="unloading" event="C0CW" cond="carriers_on_deck &gt; 0" editor:waypoints="523,462.02;523,321.02;778,321.02;778,305.02" editor:id="t_01KP5AJD6DRAB9PYR2KY7C76HB">
+        <log expr="'Unload finally'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CT" editor:waypoints="428.22222222222223,425.02;433.77777777777777,425.02" editor:id="t_01KP5AJD6DMQD40T6ZY6QESVM1">
+        <log expr="'Check presence'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CS" editor:waypoints="422.6666666666667,395.02;439.33333333333337,395.02" editor:id="t_01KP5AJD6DJ580MZG35FSNCRSA">
+        <log expr="'Check tray'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CP" editor:waypoints="417.11111111111114,365.02;444.8888888888889,365.02" editor:id="t_01KP5AJD6D8XX7HGVSVGHGHW7Y">
+        <log expr="'Set LEDs'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CB" editor:waypoints="411.55555555555554,335.02;450.44444444444446,335.02" editor:id="t_01KP5AJD6DDZP0Y4F6YSXBKTCD">
+        <log expr="'Set barcode types'" label="FW"/>
+      </transition>
+      <transition target="monitoring" event="C0CU" editor:waypoints="553,485.02;553,417.02" editor:labelRotation="-90" editor:id="t_01KP5JQ6K6VP6B69105D4DFKTE">
+        <log expr="'Start monitoring'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0IV" editor:waypoints="406,305.02;456,305.02" editor:id="t_01KP5JQ6K60ARM151WZJYF5DD2">
+        <log expr="'AutoLoad Z-safe'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CA" editor:waypoints="400.44444444444446,275.02;461.55555555555554,275.02" editor:id="t_01KP5JQ6K6WZATVCZ8GEK9F6SY">
+        <log expr="'Push carrier to tray'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CN" editor:waypoints="394.8888888888889,245.01999999999998;467.11111111111114,245.01999999999998" editor:id="t_01KP5JQ6K69JCBBTYAN6PPNBBB">
+        <log expr="'Move to ID position'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0DB" editor:waypoints="389.3333333333333,215.01999999999998;472.6666666666667,215.01999999999998" editor:id="t_01KP5JQ6K6DBAZE79T7EHK2KKM">
+        <log expr="'Set free-definable carrier reading'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0DR" editor:waypoints="383.77777777777777,185.01999999999998;478.22222222222223,185.01999999999998" editor:id="t_01KP5JQ6K759ZVTR02YGB7VYS6">
+        <log expr="'Reset free-definable settings'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0RC" editor:waypoints="378.22222222222223,155.01999999999998;483.7777777777778,155.01999999999998" editor:id="t_01KP5JQ6K7V05PG01RBRAB605J">
+        <log expr="'Query carrier on deck: '+carriers_on_deck" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0QA" editor:waypoints="372.6666666666667,125.01999999999998;489.33333333333337,125.01999999999998" editor:id="t_01KP5JQ6K7YM66FV96N2BV2TGF">
+        <log expr="'Request AutoLoad slot position'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0CQ" editor:waypoints="367.1111111111111,95.01999999999998;494.8888888888889,95.01999999999998" editor:id="t_01KP5JQ6K7W66GJ23PY33C693S">
+        <log expr="'Request AutoLoad module type'" label="FW"/>
+      </transition>
+      <transition target="idle_al" event="C0VL" editor:waypoints="361.55555555555554,65.01999999999998;500.44444444444446,65.01999999999998" editor:id="t_01KP5JQ6K7HJCC85YCYSKNEP8D">
+        <log expr="'Request code data length'" label="FW"/>
+      </transition>
+    </state>
+    <state id="identifying" editor:x="708" editor:y="455.02" editor:width="200" editor:height="75" editor:label="identifying" editor:color="#2a2a3c" editor:zIndex="3">
+      <transition target="idle_al" event="identify.done" editor:id="t_01KP5AJD6DGBG071BN32TKZVX9">
+        <assign location="carrier_type" expr="_event.data.type||'unknown'"/>
+        <assign location="carrier_barcode" expr="_event.data.barcode||''"/>
+        <log expr="'Identified: '+carrier_type+' bc='+carrier_barcode" label="FW"/>
+      </transition>
+    </state>
+    <state id="loading" editor:x="30" editor:y="447.02" editor:width="150" editor:height="75" editor:label="loading" editor:color="#2a2a3c" editor:zIndex="4">
+      <onentry>
+        <!-- Schedule the completion event so the carriage eventually lands
+             on the target track. Delay carried in `_event.data._delay` is
+             the twin's estimateCommandTime('C0CL') value; fall back to
+             the ~4.5 s real-trace average if unset. -->
+        <send event="load.done" delayexpr="_event.data._delay || '4500ms'" id="al_load_timer"/>
+        <log expr="'Loading carrier to track '+target_track+' (delay=' + (_event.data._delay || '4500ms') + ')'" label="FW"/>
+      </onentry>
+      <transition target="idle_al" event="load.done" editor:waypoints="227,478.02;227,472.02" editor:id="t_01KP5AJD6DZ15JCYRVGJTE2ZYE">
+        <assign location="carriers_on_deck" expr="carriers_on_deck+1"/>
+        <!-- Carriage arrived at target track — commit position. -->
+        <assign location="pos_track" expr="target_track"/>
+        <log expr="'Carrier loaded, total='+carriers_on_deck" label="FW"/>
+      </transition>
+      <transition target="error_al" event="load.error" editor:waypoints="260,515.02;260,620.02;744,620.02;744,664.02" editor:labelRotation="-90" editor:id="t_01KP5AJD6DWFD9WYJ44M4WMPXA">
+        <assign location="last_error" expr="9"/>
+        <log expr="'Load failed (error 09)'" label="ERROR"/>
+      </transition>
+    </state>
+    <state id="unloading" editor:x="801" editor:y="255.01999999999998" editor:width="175" editor:height="75" editor:label="unloading" editor:color="#2a2a3c" editor:zIndex="5">
+      <onentry>
+        <send event="unload.done" delayexpr="_event.data._delay || '5500ms'" id="al_unload_timer"/>
+        <log expr="'Unloading carrier from track '+pos_track+' (delay=' + (_event.data._delay || '5500ms') + ')'" label="FW"/>
+      </onentry>
+      <transition target="idle_al" event="unload.done" editor:waypoints="513,286.02;513,455.02" editor:id="t_01KP5AJD6DRG82BQA2PCN785T1">
+        <assign location="carriers_on_deck" expr="Math.max(0,carriers_on_deck-1)"/>
+        <!-- Carriage returned to home tray. -->
+        <assign location="pos_track" expr="0"/>
+        <log expr="'Carrier unloaded, total='+carriers_on_deck" label="FW"/>
+      </transition>
+    </state>
+    <state id="monitoring" editor:x="801" editor:y="355.02" editor:width="175" editor:height="75" editor:label="monitoring" editor:color="#2a2a3c" editor:zIndex="6">
+      <transition target="idle_al" event="monitor.done" editor:waypoints="679,392.02;679,406.02;543,406.02;543,477.02" editor:id="t_01KP5AJD6DGQX5PNB92NF5NZGK"/>
+    </state>
+    <state id="error_al" editor:x="767" editor:y="602.02" editor:width="175" editor:height="75" editor:label="error_al" editor:color="#2a2a3c" editor:zIndex="7">
+      <onentry>
+        <log expr="'AutoLoad error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0II" editor:waypoints="969,652.02;969,592.02" editor:id="t_01KP5AJD6DVGAJDEV1G6JKSK2B">
+        <assign location="last_error" expr="0"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

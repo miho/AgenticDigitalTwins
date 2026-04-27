@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>STAR Twin — 3D view</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0e10; color: #e6e6e6;
+               font: 13px/1.4 -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+  canvas { display: block; }
+
+  #panel {
+    position: absolute; top: 12px; left: 12px; z-index: 10;
+    background: rgba(20,20,24,0.85); backdrop-filter: blur(6px);
+    padding: 12px 14px; border-radius: 8px; border: 1px solid #333;
+    min-width: 220px;
+  }
+  #panel h1 { font-size: 12px; margin: 0 0 8px; letter-spacing: 0.05em;
+              text-transform: uppercase; color: #8af; }
+  #panel label { display: block; margin: 6px 0 2px; font-size: 11px; opacity: 0.7; }
+  #panel select { width: 100%; background: #222; color: #e6e6e6;
+                  border: 1px solid #444; border-radius: 4px;
+                  padding: 5px 7px; font-size: 12px; }
+  .row { display: flex; gap: 6px; align-items: center; margin: 5px 0; font-size: 12px; }
+  .row input { margin: 0; }
+
+  #conn { margin-top: 10px; padding-top: 8px; border-top: 1px solid #333;
+          font: 11px ui-monospace, Consolas, monospace; }
+  #conn .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+               background: #666; margin-right: 6px; vertical-align: middle; }
+  #conn.ok .dot { background: #4ec04e; box-shadow: 0 0 6px #4ec04e; }
+  #conn.err .dot { background: #d04040; }
+
+  #hud {
+    position: absolute; bottom: 12px; left: 12px; z-index: 10;
+    background: rgba(20,20,24,0.85); backdrop-filter: blur(6px);
+    padding: 10px 14px; border-radius: 8px; border: 1px solid #333;
+    font: 11px ui-monospace, Consolas, monospace;
+    max-width: 420px;
+  }
+  #hud table { border-collapse: collapse; }
+  #hud td { padding: 1px 8px 1px 0; }
+  #hud td.label { color: #8af; min-width: 56px; }
+  #hud td.num { text-align: right; min-width: 60px; color: #e6e6e6; }
+  #hud td.unit { color: #666; }
+
+  #hint { position: absolute; bottom: 12px; right: 12px;
+          font-size: 11px; opacity: 0.5; z-index: 10; }
+
+  a { color: #8af; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>STAR 3D</h1>
+  <label for="modelSel">Deck</label>
+  <select id="modelSel">
+    <option value="star_deck">STAR (full)</option>
+    <option value="starlet_deck">STARlet</option>
+    <option value="starplus_deck">STARplus</option>
+  </select>
+  <div class="row"><input type="checkbox" id="wf"><label for="wf" style="margin:0;opacity:1;">wireframe</label></div>
+  <div class="row"><input type="checkbox" id="grid" checked><label for="grid" style="margin:0;opacity:1;">grid</label></div>
+  <div class="row"><input type="checkbox" id="axes" checked><label for="axes" style="margin:0;opacity:1;">axes</label></div>
+  <div class="row"><input type="checkbox" id="ghost" checked><label for="ghost" style="margin:0;opacity:1;">arm ghosts</label></div>
+
+  <details style="margin-top:10px;padding-top:8px;border-top:1px solid #333;">
+    <summary style="cursor:pointer;font-size:11px;color:#8af;letter-spacing:0.04em;">chassis offset (mm)</summary>
+    <div style="display:grid;grid-template-columns:14px 1fr 44px;gap:4px;align-items:center;margin-top:6px;font-size:11px;">
+      <span>X</span><input type="range" id="offX" min="-500" max="2000" value="300"><span id="offXv">300</span>
+      <span>Y</span><input type="range" id="offY" min="-400" max="400" value="-103"><span id="offYv">-103</span>
+      <span>Z</span><input type="range" id="offZ" min="-500" max="1000" value="167"><span id="offZv">167</span>
+    </div>
+  </details>
+
+  <div id="conn"><span class="dot"></span><span id="connText">connecting…</span></div>
+</div>
+
+<div id="hud">
+  <table id="hudTable">
+    <tr><td class="label">pip</td><td class="num" id="pipX">—</td><td class="num" id="pipY">—</td><td class="num" id="pipZ">—</td><td class="unit">mm</td></tr>
+    <tr><td class="label">iswap</td><td class="num" id="iswapX">—</td><td class="num" id="iswapY">—</td><td class="num" id="iswapZ">—</td><td class="unit">mm</td></tr>
+    <tr><td class="label">h96</td><td class="num" id="h96X">—</td><td class="num" id="h96Y">—</td><td class="num" id="h96Z">—</td><td class="unit">mm</td></tr>
+    <tr><td class="label">h384</td><td class="num" id="h384X">—</td><td class="num" id="h384Y">—</td><td class="num" id="h384Z">—</td><td class="unit">mm</td></tr>
+    <tr><td class="label">autoload</td><td class="num" id="alX">—</td><td class="num" colspan="2"></td><td class="unit">track</td></tr>
+  </table>
+</div>
+
+<div id="hint">
+  left-drag rotate · right-drag pan · wheel zoom · <a href="/">back to 2D UI</a>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":  "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="./3d.js"></script>
+</body>
+</html>

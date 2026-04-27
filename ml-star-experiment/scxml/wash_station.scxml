@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_WashStation">
+  <datamodel>
+    <data id="station_number" expr="1"/>
+    <data id="fluid_ok" expr="true"/>
+    <data id="wash_cycles" expr="0"/>
+    <data id="last_error" expr="0"/>
+    <data id="fluid_level_1" expr="200000"/>
+    <data id="fluid_level_2" expr="200000"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized" editor:x="12" editor:y="12" editor:width="1325" editor:height="347" editor:label="operational" editor:color="#1e2a3a" editor:zIndex="0">
+    <state id="not_initialized" editor:x="1070" editor:y="176" editor:width="225" editor:height="75" editor:label="not_initialized" editor:color="#2a2a3c" editor:zIndex="1">
+      <transition target="idle_ws" event="C0WI" editor:waypoints="577,238;577,205" editor:labelRotation="-90" editor:id="t_01KP5AJYG9B8C6R3GVK5DB20YF">
+        <assign location="fluid_ok" expr="true"/>
+        <assign location="last_error" expr="0"/>
+        <log expr="'Init wash station'" label="FW"/>
+      </transition>
+    </state>
+    <state id="idle_ws" editor:x="30" editor:y="140" editor:width="150" editor:height="75" editor:label="idle_ws" editor:color="#2a2a3c" editor:zIndex="2">
+      <transition target="washing_ws" event="C0WS" cond="fluid_ok" editor:waypoints="217,167;217,89;372,89;372,99" editor:id="t_01KP5AJYG9TP0SF5V1N1ESVYPJ">
+        <log expr="'Start wash (G3)'" label="FW"/>
+      </transition>
+      <transition target="error_ws" event="C0WS" cond="!fluid_ok" editor:waypoints="577,197;577,201;749,201;749,204" editor:id="t_01KP5AJYG9WYBQVJ6AVWGPG9XW">
+        <assign location="last_error" expr="18"/>
+        <log expr="'No wash fluid (error 18)'" label="ERROR"/>
+      </transition>
+      <transition target="washing_ws" event="C0WC" cond="fluid_ok" editor:waypoints="227,175;227,121;372,121;372,114" editor:id="t_01KP5AJYG9PRB4A8RD50GK8KJC">
+        <log expr="'Start wash (CR)'" label="FW"/>
+      </transition>
+      <transition target="error_ws" event="C0WC" cond="!fluid_ok" editor:waypoints="749,190;749,186" editor:labelRotation="-90" editor:id="t_01KP5AJYG92ZCFAFZEXMPY8E04">
+        <assign location="last_error" expr="18"/>
+        <log expr="'No wash fluid (error 18)'" label="ERROR"/>
+      </transition>
+      <transition target="waiting_ws" event="C0WW" editor:waypoints="207,220;207,304" editor:id="t_01KP5AJYG91B9TQYKDTSS19DV8">
+        <log expr="'Wait for wash'" label="FW"/>
+      </transition>
+      <transition target="washing_ws" event="C0WR" cond="fluid_ok" editor:waypoints="247,182;247,153;392,153;392,129" editor:id="t_01KP5AJYG9510PMN4PCF4HN0RW">
+        <log expr="'Repeat wash'" label="FW"/>
+      </transition>
+      <transition target="idle_ws" event="C0QF" editor:waypoints="80,130;130,130" editor:id="t_01KP5AJYG9PAY68YPTSVE0S32K">
+        <log expr="'Fluid status: '+(fluid_ok?'OK':'EMPTY')" label="FW"/>
+      </transition>
+    </state>
+    <state id="washing_ws" editor:x="395" editor:y="57" editor:width="175" editor:height="75" editor:label="washing_ws" editor:color="#2a2a3c" editor:zIndex="3">
+      <onentry>
+        <assign location="wash_cycles" expr="wash_cycles+1"/>
+        <assign location="fluid_level_1" expr="_event.data._fluid_1 !== undefined ? _event.data._fluid_1 : fluid_level_1"/>
+        <assign location="fluid_level_2" expr="_event.data._fluid_2 !== undefined ? _event.data._fluid_2 : fluid_level_2"/>
+        <send event="wash_ws.done" delayexpr="_event.data._delay || '4000ms'" id="wash_ws_timer"/>
+        <log expr="'Washing... (cycle '+wash_cycles+')'" label="FW"/>
+      </onentry>
+      <onexit>
+        <cancel sendid="wash_ws_timer"/>
+      </onexit>
+      <transition target="idle_ws" event="wash_ws.done" editor:waypoints="333,84;333,57;207,57;207,160" editor:id="t_01KP5JTHSMH6TZC8FH1N6QC9WC">
+        <log expr="'Wash complete'" label="FW"/>
+      </transition>
+      <transition target="error_ws" event="wash_ws.error" editor:waypoints="749,107;749,167" editor:id="t_01KP5JTHSMF7HHEAX254ABVYQF">
+        <assign location="last_error" expr="18"/>
+        <assign location="fluid_ok" expr="false"/>
+        <log expr="'Wash error: fluid empty (error 18)'" label="ERROR"/>
+      </transition>
+    </state>
+    <state id="waiting_ws" editor:x="366" editor:y="242" editor:width="175" editor:height="75" editor:label="waiting_ws" editor:color="#2a2a3c" editor:zIndex="4">
+      <transition target="idle_ws" event="wait_ws.done" editor:waypoints="217,279;217,212" editor:id="t_01KP5AJYG962T8D9D1DGYBY22G"/>
+    </state>
+    <state id="error_ws" editor:x="752" editor:y="136" editor:width="175" editor:height="75" editor:label="error_ws" editor:color="#2a2a3c" editor:zIndex="5">
+      <onentry>
+        <log expr="'Wash error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0WI" editor:waypoints="1047,186;1047,213" editor:id="t_01KP5AJYG98TP3G3N2AZDJFTVR">
+        <assign location="last_error" expr="0"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

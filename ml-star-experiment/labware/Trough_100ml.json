@@ -1,0 +1,29 @@
+{
+  "type": "Trough_100ml",
+  "category": "trough",
+  "description": "100ml single-channel reagent trough",
+  "geometry": {
+    "rows": 1,
+    "columns": 1,
+    "wellPitch": 0,
+    "wellShape": "flat",
+    "wellDepth": 380,
+    "wellDiameterTop": 800,
+    "wellVolume": 1000000
+  },
+  "dimensions": {
+    "length": 900,
+    "width": 400,
+    "height": 400,
+    "flangeHeight": 0
+  },
+  "positions": {
+    "layout": "grid",
+    "offsetX": 450,
+    "offsetY": 200
+  },
+  "liquidHandling": {
+    "deadVolume": 5000,
+    "material": "polystyrene"
+  }
+}

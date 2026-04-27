@@ -1,0 +1,101 @@
+{
+  "name": "hamilton-star-twin",
+  "version": "0.2.0",
+  "description": "Hamilton Microlab STAR Digital Twin — FW-level simulation with SCXML state machines",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build:ts": "tsc && tsc -p tsconfig.renderer.json",
+    "build:assets": "node scripts/build-assets.js",
+    "build:sm": "node scripts/build-sm.js",
+    "build:modules": "npm run build:sm && node scripts/convert-modules.js",
+    "build": "npm run build:ts && npm run build:assets && npm run build:modules",
+    "start": "npm run build && electron dist/main/main.js",
+    "dev": "npm run build && electron dist/main/main.js",
+    "server": "npm run build && node dist/headless/server.js",
+    "dev:server": "npm run build && node dist/headless/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:contract": "vitest run tests/contract",
+    "test:e2e": "vitest run tests/e2e",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run tests/unit && vitest run tests/contract && vitest run tests/e2e && vitest run tests/integration",
+    "test:visual": "cross-env VISUAL_COMPARE=1 vitest run tests/integration/tutorial-screenshots.test.ts",
+    "test:visual:update": "cross-env VISUAL_UPDATE=1 vitest run tests/integration/tutorial-screenshots.test.ts"
+  },
+  "author": "Hamilton",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pngjs": "^6.0.5",
+    "@vitest/coverage-v8": "^4.1.4",
+    "cross-env": "^10.1.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.12",
+    "pixelmatch": "^7.1.0",
+    "playwright": "^1.59.1",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.4"
+  },
+  "build": {
+    "appId": "ch.hamilton.star.digital-twin",
+    "productName": "Hamilton STAR Digital Twin",
+    "directories": {
+      "buildResources": "build",
+      "output": "../installer/dist-installer"
+    },
+    "asar": false,
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../installer/stage/mcp",
+        "to": "mcp"
+      },
+      {
+        "from": "../installer/stage/launchers",
+        "to": "launchers"
+      },
+      {
+        "from": "../installer/stage/runtime",
+        "to": "runtime"
+      }
+    ],
+    "extraFiles": [
+      {
+        "from": "../installer/stage/docs/README.md",
+        "to": "README.md"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "HamiltonStarTwin-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "menuCategory": "Hamilton STAR Digital Twin",
+      "artifactName": "HamiltonStarTwin-Setup-${version}-${arch}.${ext}",
+      "include": "build/installer.nsh"
+    }
+  }
+}

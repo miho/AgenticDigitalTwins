@@ -1,0 +1,34 @@
+{
+  "type": "Cos_384_Sq",
+  "category": "plate",
+  "description": "Corning 384-well square well microplate",
+  "manufacturer": "Corning",
+  "geometry": {
+    "rows": 16,
+    "columns": 24,
+    "wellPitch": 45,
+    "wellShape": "square",
+    "wellDepth": 112,
+    "wellDiameterTop": 36,
+    "wellDiameterBottom": 30,
+    "wellVolume": 1200,
+    "cornerRadius": 5
+  },
+  "dimensions": {
+    "length": 1276,
+    "width": 855,
+    "height": 144,
+    "flangeHeight": 25
+  },
+  "positions": {
+    "layout": "grid",
+    "offsetX": 122,
+    "offsetY": 92
+  },
+  "liquidHandling": {
+    "deadVolume": 50,
+    "touchOffDistance": 5,
+    "cLLDSensitivity": "high",
+    "material": "polystyrene"
+  }
+}

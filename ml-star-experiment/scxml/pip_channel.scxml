@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_PipChannel">
+  <datamodel>
+    <data id="channel_count" expr="16"/>
+    <data id="tip_fitted" expr="[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false]"/>
+    <data id="tip_type" expr="[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]"/>
+    <data id="volume" expr="[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"/>
+    <data id="pos_x" expr="0"/>
+    <data id="pos_y" expr="[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"/>
+    <data id="pos_z" expr="[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"/>
+    <data id="x_min" expr="0"/>
+    <data id="x_max" expr="30000"/>
+    <data id="y_min" expr="600"/>
+    <data id="y_max" expr="6000"/>
+    <data id="z_max" expr="2500"/>
+    <data id="z_traverse" expr="1450"/>
+    <data id="min_y_spacing" expr="90"/>
+    <data id="last_error" expr="0"/>
+    <data id="active_tip_count" expr="0"/>
+    <data id="active_volume_total" expr="0"/>
+    <data id="last_lld_height" expr="[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"/>
+    <data id="tadm_status" expr="&apos;ok&apos;"/>
+    <data id="dispense_fly_active" expr="false"/>
+    <data id="multi_dispense_cycles" expr="0"/>
+    <data id="multi_dispense_dx" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized" editor:x="12" editor:y="12" editor:width="2767" editor:height="1634" editor:label="operational" editor:color="#1e2a3a" editor:zIndex="0">
+    <state id="not_initialized" editor:x="2512" editor:y="1529" editor:width="225" editor:height="75" editor:label="not_initialized" editor:color="#2a2a3c" editor:zIndex="1">
+      <transition target="no_tip" event="C0DI" editor:waypoints="42,1591;42,702;1218,702;1218,727" editor:labelRotation="-90" editor:id="t_01KP58M5ZD85V07KM09EC6ADTY">
+        <script><![CDATA[tip_fitted=tip_fitted.map(function(){return false;});tip_type=tip_type.map(function(){return -1;});volume=volume.map(function(){return 0;});for(var i=0;i<16;i++){pos_y[i]=0;pos_z[i]=0;}pos_x=0;active_tip_count=0;active_volume_total=0;last_error=0;]]></script>
+        <log expr="'Initialize PIP channels'" label="FW"/>
+      </transition>
+    </state>
+    <state id="idle" initial="no_tip" editor:x="320" editor:y="482" editor:width="1096" editor:height="855" editor:label="idle" editor:color="#1e2a3a" editor:zIndex="2">
+      <!-- VENUS re-sends C0DI on every method run with park positions;
+           real FW accepts re-init idempotently while idle. -->
+      <transition target="idle" event="C0DI"/>
+      <transition target="moving" event="C0JM" cond="pos_z.every(function(z){return z&lt;=z_traverse;})&amp;&amp;(_event.data.xp===undefined||(_event.data.xp&gt;=x_min&amp;&amp;_event.data.xp&lt;=x_max))" editor:waypoints="1638,729;1638,707" editor:id="t_01KP58M5ZDB105H7MM65V726QR">
+        <script><![CDATA[if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++)pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}]]></script>
+        <log expr="'Move to X='+pos_x" label="FW"/>
+      </transition>
+      <transition target="error" event="C0JM" cond="!pos_z.every(function(z){return z&lt;=z_traverse;})" editor:waypoints="1807,749;1807,771;2226,771;2226,813" editor:id="t_01KP58M5ZD91MSDPWWEF07ANWY">
+        <assign expr="27" location="last_error"/>
+        <log expr="'Z not at traverse height (error 27)'" label="ERROR"/>
+      </transition>
+      <transition target="error" event="C0JM" cond="_event.data.xp!==undefined&amp;&amp;(_event.data.xp&lt;x_min||_event.data.xp&gt;x_max)" editor:waypoints="1648,759;1648,803;2216,803;2216,824" editor:id="t_01KP58M5ZDJ1PHXY230SAB5AH1">
+        <assign expr="27" location="last_error"/>
+        <log expr="'X out of range (error 27)'" label="ERROR"/>
+      </transition>
+      <transition target="idle" event="C0ZA" editor:waypoints="1566,527;1566,472;170,472;170,1127" editor:id="t_01KP5JSF21KZJGMETSJ56QRQMN">
+        <script><![CDATA[for(var i=0;i<16;i++)pos_z[i]=0;]]></script>
+        <log expr="'All channels Z-safety'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0JY" editor:waypoints="1576,537;1576,442;160,442;160,1137" editor:id="t_01KP5JSF21F06YH06M7EZKZFH8">
+        <script><![CDATA[var yp=_event.data.yp;if(typeof yp==='number'){for(var i=0;i<16;i++)pos_y[i]=yp;}]]></script>
+        <log expr="'Position all Y'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0JZ" editor:waypoints="1586,547;1586,412;150,412;150,1147" editor:id="t_01KP5JSF21G71YTTQK1DX06H69">
+        <script><![CDATA[var zp=_event.data.zp;if(typeof zp==='number'){for(var i=0;i<16;i++)pos_z[i]=zp;}]]></script>
+        <log expr="'Position all Z'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0KY" editor:waypoints="1596,557;1596,382;140,382;140,1157" editor:id="t_01KP5JSF21KDYNRT2RZ3ZEJY8X">
+        <script><![CDATA[var pn=_event.data.pn||0;var yj=_event.data.yj||0;if(pn>=0&&pn<16)pos_y[pn]=yj;]]></script>
+        <log expr="'Channel '+(_event.data.pn||0)+' Y='+(_event.data.yj||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0KZ" editor:waypoints="1606,567;1606,352;130,352;130,1167" editor:id="t_01KP5JSF21C9D56838YTNEC0H3">
+        <script><![CDATA[var pn=_event.data.pn||0;var zj=_event.data.zj||0;if(pn>=0&&pn<16)pos_z[pn]=zj;]]></script>
+        <log expr="'Channel '+(_event.data.pn||0)+' Z='+(_event.data.zj||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0JP" editor:waypoints="1616,577;1616,322;120,322;120,1177" editor:id="t_01KP5JSF211YRM21TCQCVB3PAP">
+        <log expr="'Free Y range for channel '+(_event.data.pn||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0JE" editor:waypoints="1626,587;1626,292;110,292;110,1187" editor:id="t_01KP5JSF21ZXNFTZSBVAGPVM7C">
+        <log expr="'Spread channels'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0XL" editor:waypoints="1636,597;1636,262;100,262;100,1197" editor:id="t_01KP5JSF211AFZP083YJERX6Z0">
+        <log expr="'Search teach-in signal ch='+(_event.data.pn||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0JR" editor:waypoints="1646,607;1646,232;90,232;90,1207" editor:id="t_01KP5JSF211T347B1H3G620PJJ">
+        <log expr="'Teach rack at X='+(_event.data.xs||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0DC" editor:waypoints="1656,617;1656,202;80,202;80,1217" editor:id="t_01KP5JSF2181WQPTGZ25B5079B">
+        <assign location="multi_dispense_cycles" expr="_event.data.dc||0"/>
+        <assign location="multi_dispense_dx" expr="_event.data.dx||0"/>
+        <log expr="'Multi-dispense: cycles='+(_event.data.dc||0)+' dx='+(_event.data.dx||0)" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RY" editor:waypoints="1666,627;1666,172;70,172;70,1227" editor:id="t_01KP5JSF21XDPY41DBWG60A8J6">
+        <log expr="'Request all Y positions'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RB" editor:waypoints="1676,637;1676,142;60,142;60,1237" editor:id="t_01KP5JSF210GQKR24WKD3K7SM5">
+        <log expr="'Request Y ch='+(_event.data.pn||0)+': '+pos_y[_event.data.pn||0]" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RZ" editor:waypoints="1686,647;1686,112;50,112;50,1247" editor:id="t_01KP5JSF21P50RCRD03SHAQAD5">
+        <log expr="'Request all Z positions'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RD" editor:waypoints="1616,657;1616,1497;120,1497;120,1257" editor:id="t_01KP5JSF21MSRDF39SQSAM6ZP5">
+        <log expr="'Request Z ch='+(_event.data.pn||0)+': '+pos_z[_event.data.pn||0]" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RT" editor:waypoints="1606,667;1606,1467;130,1467;130,1267" editor:id="t_01KP5JSF21ARS39RNKYQ3BW7XX">
+        <log expr="'Tip presence: '+active_tip_count+' fitted'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0RL" editor:waypoints="1596,677;1596,1437;140,1437;140,1277" editor:id="t_01KP5JSF21BEEH0DYW5SEJT9DP">
+        <log expr="'Last LLD heights: '+last_lld_height.filter(function(h){return h&gt;0;}).length+' detected'" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0QS" editor:waypoints="1586,687;1586,1407;150,1407;150,1287" editor:id="t_01KP5JSF21TX2Z19METRWX6BZM">
+        <log expr="'TADM status: '+tadm_status" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0FS" editor:waypoints="1576,697;1576,1377;160,1377;160,1297" editor:id="t_01KP5JSF210GG126SWHEFE357T">
+        <log expr="'Dispense-on-fly active: '+dispense_fly_active" label="FW"/>
+      </transition>
+      <transition target="idle" event="C0VE" editor:waypoints="1566,707;1566,1347;170,1347;170,1307" editor:id="t_01KP5JSF21DT8KW1FAXYTVGCK6">
+        <log expr="'2nd section asp data'" label="FW"/>
+      </transition>
+      <history id="idle_history" type="deep" editor:x="30" editor:y="143" editor:width="50" editor:height="50" editor:label="H*" editor:color="#2a2a3c" editor:zIndex="3"/>
+      <state id="no_tip" editor:x="901" editor:y="220" editor:width="150" editor:height="75" editor:label="no_tip" editor:color="#2a2a3c" editor:zIndex="4">
+        <transition target="tip_empty" event="C0TP" editor:waypoints="1135,752;1135,750;372,750;372,1107;387,1107.02;830,1107.02;830,1084.02" editor:labelRotation="-90" editor:id="t_01KP58M5ZDJVP9P80H6QTVAM80">
+          <script><![CDATA[var tm=_event.data.tm||0;var tt=_event.data.tt||0;var c=0;for(var i=0;i<16;i++){if(tm&(1<<i)){tip_fitted[i]=true;tip_type[i]=tt;c++;}}active_tip_count=c;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tm&(1<<j))pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++){if(tm&(1<<m))pos_z[m]=th;}]]></script>
+          <log expr="'Tip pick-up: '+active_tip_count+' ch, type='+(_event.data.tt||0)" label="FW"/>
+        </transition>
+        <transition target="error" event="C0AS" editor:waypoints="2236,739;2236,803" editor:labelRotation="-90" editor:id="t_01KP58M5ZDWBMR6ACM3E64H2P2">
+          <assign expr="8" location="last_error"/>
+          <log expr="'No tip (error 08)'" label="ERROR"/>
+        </transition>
+        <transition target="error" event="C0DS" editor:waypoints="1398,764;1398,769;1638,769;1638,835" editor:labelRotation="-90" editor:id="t_01KP5JSF22QQFS830XD321KXAZ">
+          <assign expr="8" location="last_error"/>
+          <log expr="'No tip (error 08)'" label="ERROR"/>
+        </transition>
+        <transition target="tip_empty" event="C0TW" editor:waypoints="362,739;362,1118;387,1118.02;840,1118.02;840,1096.02" editor:id="t_01KP5JSF22XE41DNQ5KN35YPXX">
+          <script><![CDATA[var tm=_event.data.tm||0;var tt=_event.data.tt||0;var c=0;for(var i=0;i<16;i++){if(tm&(1<<i)){tip_fitted[i]=true;tip_type[i]=tt;c++;}}active_tip_count=c;]]></script>
+          <log expr="'DC wash tip pickup: '+active_tip_count+' ch'" label="FW"/>
+        </transition>
+      </state>
+      <state id="tip_fitted_state" initial="tip_empty" editor:x="60" editor:y="303" editor:width="693" editor:height="362.02" editor:label="tip_fitted_state" editor:color="#1e2a3a" editor:zIndex="5">
+        <transition target="washing" event="C0LW" editor:waypoints="1105,1106;1105,1107;1638,1107;1638,1526" editor:id="t_01KP58M5ZD9AF7MGG3A0ZKZS74">
+          <script><![CDATA[for(var i=0;i<16;i++)volume[i]=0;active_volume_total=0;]]></script>
+          <log expr="'DC Wash'" label="FW"/>
+        </transition>
+        <state id="tip_empty" editor:x="473" editor:y="249.01999999999998" editor:width="175" editor:height="75" editor:label="tip_empty" editor:color="#2a2a3c" editor:zIndex="6">
+          <transition target="tip_loaded" event="C0AS" editor:waypoints="850,1071.02;850,1070.02;747,1070.02;747,1052.02" editor:id="t_01KP58M5ZD853VPM1F5FE1N8JR">
+            <script><![CDATA[var tm=_event.data.tm||0;var av=_event.data.av||0;var total=0;for(var i=0;i<16;i++){if(tip_fitted[i]){if(tm&(1<<i))volume[i]=av;total+=volume[i];}}active_volume_total=total;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tip_fitted[j])pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}var th_end=_event.data.th!==undefined?_event.data.th:z_traverse;for(var k=0;k<16;k++){if(tip_fitted[k])pos_z[k]=th_end;}]]></script>
+            <log expr="'Aspirate vol='+(_event.data.av||0)+' on '+active_tip_count+' ch'" label="FW"/>
+          </transition>
+          <transition target="tip_empty" event="C0TR" cond="(function(){var tm=_event.data.tm||0;for(var i=0;i&lt;16;i++){if(tip_fitted[i]&amp;&amp;!(tm&amp;(1&lt;&lt;i)))return true;}return false;})()" editor:id="t_partial_eject_tip_empty">
+            <script><![CDATA[var tm=_event.data.tm||0;for(var i=0;i<16;i++){if((tm&(1<<i))&&tip_fitted[i]){tip_fitted[i]=false;tip_type[i]=-1;volume[i]=0;}}var c=0;for(var j=0;j<16;j++)if(tip_fitted[j])c++;active_tip_count=c;var t=0;for(var k=0;k<16;k++)if(tip_fitted[k])t+=volume[k];active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var l=0;l<16;l++){pos_y[l]=ya&&ya[l]!==undefined?ya[l]:yb-l*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++){if(tm&(1<<m))pos_z[m]=th;}]]></script>
+            <log expr="'Tip partial eject: '+active_tip_count+' ch still fitted'" label="FW"/>
+          </transition>
+          <transition target="no_tip" event="C0TR" editor:waypoints="1055,1071.02;1055,1012.02;1090,1012;1125,1012;1125,797;1198,797;1198,777" editor:id="t_01KP58M5ZDMTKS70NEGM05AS10">
+            <script><![CDATA[for(var i=0;i<16;i++){tip_fitted[i]=false;tip_type[i]=-1;volume[i]=0;}active_tip_count=0;active_volume_total=0;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++)pos_z[m]=th;]]></script>
+            <log expr="'Tip eject'" label="FW"/>
+          </transition>
+          <transition target="tip_empty" event="C0TP" cond="(function(){var tm=_event.data.tm||0;for(var i=0;i&lt;16;i++){if((tm&amp;(1&lt;&lt;i))&amp;&amp;tip_fitted[i])return false;}return true;})()" editor:id="t_additional_pickup_tip_empty">
+            <script><![CDATA[var tm=_event.data.tm||0;var tt=_event.data.tt||0;for(var i=0;i<16;i++){if((tm&(1<<i))&&!tip_fitted[i]){tip_fitted[i]=true;tip_type[i]=tt;}}var c=0;for(var j=0;j<16;j++)if(tip_fitted[j])c++;active_tip_count=c;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var k=0;k<16;k++){if(tm&(1<<k))pos_y[k]=ya&&ya[k]!==undefined?ya[k]:yb-k*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++){if(tm&(1<<m))pos_z[m]=th;}]]></script>
+            <log expr="'Tip pick-up (add): total '+active_tip_count+' ch fitted'" label="FW"/>
+          </transition>
+          <transition target="error" event="C0TP" editor:waypoints="1090,1096;1721,1096;1721,856" editor:labelRotation="-90" editor:id="t_01KP58M5ZDW0D6NAR92BT7MK6F">
+            <assign expr="7" location="last_error"/>
+            <log expr="'Tip already fitted (07)'" label="ERROR"/>
+          </transition>
+        </state>
+        <state id="tip_loaded" editor:x="92.5" editor:y="195.01999999999998" editor:width="175" editor:height="75" editor:label="tip_loaded" editor:color="#2a2a3c" editor:zIndex="7">
+          <transition target="tip_loaded" event="C0DS" cond="_event.data.dm==4" editor:waypoints="172.04545454545456,185.01999999999998;187.95454545454544,185.01999999999998" editor:id="t_01KP58M5ZDEHCDVWBCFHG0AR96">
+            <script><![CDATA[for(var i=0;i<16;i++)volume[i]=0;active_volume_total=0;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tip_fitted[j])pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}]]></script>
+            <log expr="'Empty tip'" label="FW"/>
+          </transition>
+          <transition target="tip_loaded" event="C0DS" cond="_event.data.dm==2||_event.data.dm==3" editor:waypoints="156.13636363636363,155.01999999999998;203.86363636363637,155.01999999999998" editor:id="t_01KP58M5ZD0B5QRV7DVR31DVAS">
+            <script><![CDATA[var tm=_event.data.tm||0;var dv=_event.data.dv||0;var t=0;for(var i=0;i<16;i++){if(tip_fitted[i]){if(tm&(1<<i))volume[i]=Math.max(0,volume[i]-dv);t+=volume[i];}}active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tip_fitted[j])pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}]]></script>
+            <log expr="'Partial vol='+(_event.data.dv||0)+' rem='+active_volume_total" label="FW"/>
+          </transition>
+          <transition target="tip_empty" event="C0DS" editor:waypoints="757,1037.02;757,1059.02" editor:id="t_01KP58M5ZDCWETF8Q9S50AV0AN">
+            <script><![CDATA[var tm=_event.data.tm||0;var dv=_event.data.dv||0;var t=0;for(var i=0;i<16;i++){if(tip_fitted[i]){if(tm&(1<<i))volume[i]=Math.max(0,volume[i]-dv);t+=volume[i];}}active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tip_fitted[j])pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}]]></script>
+            <log expr="'Jet disp vol='+(_event.data.dv||0)" label="FW"/>
+          </transition>
+          <transition target="tip_loaded" event="C0AS" editor:waypoints="140.22727272727275,125.01999999999998;219.77272727272725,125.01999999999998" editor:id="t_01KP58M5ZD4YFQCJ1G64E9CYWM">
+            <script><![CDATA[var tm=_event.data.tm||0;var av=_event.data.av||0;var t=0;for(var i=0;i<16;i++){if(tip_fitted[i]){if(tm&(1<<i))volume[i]+=av;t+=volume[i];}}active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){if(tip_fitted[j])pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}var th_end=_event.data.th!==undefined?_event.data.th:z_traverse;for(var k=0;k<16;k++){if(tip_fitted[k])pos_z[k]=th_end;}]]></script>
+            <log expr="'Seq asp +'+(_event.data.av||0)+' total='+active_volume_total" label="FW"/>
+          </transition>
+          <transition target="tip_loaded" event="C0DF" editor:waypoints="124.31818181818181,95.01999999999998;235.6818181818182,95.01999999999998" editor:id="t_01KP58M5ZD8VP9Z6T15Y6G92HM">
+            <script><![CDATA[var dv=_event.data.dv||0;var xi=_event.data.xi||1;var td=dv*xi;var t=0;for(var i=0;i<16;i++){if(tip_fitted[i]){volume[i]=Math.max(0,volume[i]-td);t+=volume[i];}}active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;]]></script>
+            <log expr="'Fly disp '+(_event.data.xi||1)+'x'+(_event.data.dv||0)" label="FW"/>
+          </transition>
+          <transition target="tip_loaded" event="C0DA" editor:waypoints="108.4090909090909,65.01999999999998;251.5909090909091,65.01999999999998" editor:id="t_01KP5JSF22GBENJ2N195HJQYQG">
+            <script><![CDATA[var dd=_event.data.dd||0;var av=_event.data.av||0;var dv=_event.data.dv||0;var t=0;for(var i=0;i<16;i++){if(tip_fitted[i]){if(dd&(1<<i)){volume[i]+=av;}else{volume[i]=Math.max(0,volume[i]-dv);}t+=volume[i];}}active_volume_total=t;]]></script>
+            <log expr="'Simultaneous asp+disp'" label="FW"/>
+          </transition>
+          <transition target="tip_loaded" event="C0TR" cond="(function(){var tm=_event.data.tm||0;for(var i=0;i&lt;16;i++){if(tip_fitted[i]&amp;&amp;!(tm&amp;(1&lt;&lt;i)))return true;}return false;})()" editor:id="t_partial_eject_tip_loaded">
+            <script><![CDATA[var tm=_event.data.tm||0;for(var i=0;i<16;i++){if((tm&(1<<i))&&tip_fitted[i]){tip_fitted[i]=false;tip_type[i]=-1;volume[i]=0;}}var c=0;for(var j=0;j<16;j++)if(tip_fitted[j])c++;active_tip_count=c;var t=0;for(var k=0;k<16;k++)if(tip_fitted[k])t+=volume[k];active_volume_total=t;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var l=0;l<16;l++){pos_y[l]=ya&&ya[l]!==undefined?ya[l]:yb-l*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++){if(tm&(1<<m))pos_z[m]=th;}]]></script>
+            <log expr="'Tip partial eject (loaded): '+active_tip_count+' ch still fitted'" label="FW_WARN"/>
+          </transition>
+          <transition target="no_tip" event="C0TR" editor:waypoints="737,1007.02;737,1002.02;1090,1002;1115,1002;1115,786;1188,786;1188,764" editor:id="t_01KP5JSF222SAVDKV5CX42P91Q">
+            <script><![CDATA[for(var i=0;i<16;i++){tip_fitted[i]=false;tip_type[i]=-1;volume[i]=0;}active_tip_count=0;active_volume_total=0;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var j=0;j<16;j++){pos_y[j]=ya&&ya[j]!==undefined?ya[j]:yb-j*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++)pos_z[m]=th;]]></script>
+            <log expr="'Tip eject with liquid'" label="FW_WARN"/>
+          </transition>
+          <transition target="tip_loaded" event="C0TP" cond="(function(){var tm=_event.data.tm||0;for(var i=0;i&lt;16;i++){if((tm&amp;(1&lt;&lt;i))&amp;&amp;tip_fitted[i])return false;}return true;})()" editor:id="t_additional_pickup_tip_loaded">
+            <script><![CDATA[var tm=_event.data.tm||0;var tt=_event.data.tt||0;for(var i=0;i<16;i++){if((tm&(1<<i))&&!tip_fitted[i]){tip_fitted[i]=true;tip_type[i]=tt;}}var c=0;for(var j=0;j<16;j++)if(tip_fitted[j])c++;active_tip_count=c;if(_event.data.xp!==undefined)pos_x=_event.data.xp;if(_event.data.yp!==undefined){var yb=_event.data.yp;var ya=_event.data._yp_array;for(var k=0;k<16;k++){if(tm&(1<<k))pos_y[k]=ya&&ya[k]!==undefined?ya[k]:yb-k*90;}}var th=_event.data.th!==undefined?_event.data.th:z_traverse;for(var m=0;m<16;m++){if(tm&(1<<m))pos_z[m]=th;}]]></script>
+            <log expr="'Tip pick-up (add to loaded): total '+active_tip_count+' ch fitted'" label="FW"/>
+          </transition>
+          <transition target="error" event="C0TP" editor:waypoints="1090,1022;1711,1022;1711,846" editor:labelRotation="-90" editor:id="t_01KP5JSF22VFH4D3J8ZX34XEA0">
+            <assign expr="7" location="last_error"/>
+            <log expr="'Tip already fitted (07)'" label="ERROR"/>
+          </transition>
+        </state>
+      </state>
+    </state>
+    <state id="moving" editor:x="2579" editor:y="645" editor:width="150" editor:height="75" editor:label="moving" editor:color="#2a2a3c" editor:zIndex="8">
+      <onentry>
+        <send event="move.done" delayexpr="_event.data._delay || '500ms'" id="move_timer"/>
+        <log expr="'Moving... (delay=' + (_event.data._delay || '500ms') + ')'" label="FW"/>
+      </onentry>
+      <onexit>
+        <cancel sendid="move_timer"/>
+      </onexit>
+      <transition target="idle_history" event="move.done" editor:waypoints="1708,682;1708,78;52,78;52,662" editor:labelRotation="-90" editor:id="t_01KP5JSF22YBRPC1KVHV721TDG"/>
+    </state>
+    <state id="washing" editor:x="1734" editor:y="1489" editor:width="150" editor:height="75" editor:label="washing" editor:color="#2a2a3c" editor:zIndex="9">
+      <onentry>
+        <send event="wash.done" delayexpr="_event.data._delay || '3000ms'" id="wash_timer"/>
+        <log expr="'Washing... (delay=' + (_event.data._delay || '3000ms') + ')'" label="FW"/>
+      </onentry>
+      <onexit>
+        <cancel sendid="wash_timer"/>
+      </onexit>
+      <transition target="tip_empty" event="wash.done" editor:waypoints="1711,1551;1711,1575;52,1575;52,1129;387,1129.02;850,1129.02;850,1109.02" editor:labelRotation="-90" editor:id="t_01KP5JSF226DP48ST820J6GSWN"/>
+    </state>
+    <state id="error" editor:x="2239" editor:y="780" editor:width="150" editor:height="75" editor:label="error" editor:color="#2a2a3c" editor:zIndex="10">
+      <onentry>
+        <log expr="'PIP error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0DI" editor:waypoints="2509,830;2509,1566" editor:id="t_01KP58M5ZDMXG66CP824F9GDSR">
+        <assign expr="0" location="last_error"/>
+        <log expr="'Re-init after error'" label="FW"/>
+      </transition>
+    </state>
+  </state>
+
+  <ext:traces xmlns:ext="http://vscxml.com/extensions"><ext:trace description="Init-&gt;TP(8ch)-&gt;Asp-&gt;Move-&gt;move.done(history restores tip_loaded)-&gt;PartialDisp-&gt;JetDisp-&gt;TR-&gt;Asp(err08)-&gt;ReInit-&gt;TP(2ch)-&gt;Move(X out of range err27)" name="full_test_with_history" recorded="2026-04-14T05:50:20.025864100Z">{"timestamp":422613201937,"type":"session_start","scxml_name":"HamiltonSTAR_PipChannel","datamodel":"ecmascript"}
+{"timestamp":422613211060,"type":"state_enter","state_id":"operational"}
+{"timestamp":422613211323,"type":"state_enter","state_id":"not_initialized"}
+{"timestamp":422613263694,"type":"event_received","event_name":"C0DI","event_type":"external"}
+{"timestamp":422613263873,"type":"transition","from":"not_initialized","to":"no_tip","event":"C0DI"}
+{"timestamp":422613264049,"type":"state_exit","state_id":"not_initialized"}
+{"timestamp":422613266216,"type":"log","label":"FW","message":"Initialize PIP channels"}
+{"timestamp":422613266314,"type":"state_enter","state_id":"idle"}
+{"timestamp":422613266520,"type":"state_enter","state_id":"no_tip"}
+{"timestamp":422613321857,"type":"event_received","event_name":"C0TP","event_type":"external","event_data":{"tm":255,"tt":4}}
+{"timestamp":422613376783,"type":"event_received","event_name":"C0AS","event_type":"external","event_data":{"av":1000,"xp":5000}}
+{"timestamp":422613429310,"type":"event_received","event_name":"C0JM","event_type":"external","event_data":{"xp":7000}}
+{"timestamp":422613480542,"type":"event_received","event_name":"move.done","event_type":"external"}
+{"timestamp":422613532096,"type":"transition","from":"no_tip","to":"tip_empty","event":"C0TP"}
+{"timestamp":422613532227,"type":"state_exit","state_id":"no_tip"}
+{"timestamp":422613532647,"type":"event_received","event_name":"C0DS","event_type":"external","event_data":{"dv":500,"dm":2}}
+{"timestamp":422613534375,"type":"log","label":"FW","message":"Tip pick-up: 8 ch, type=4"}
+{"timestamp":422613534500,"type":"state_enter","state_id":"tip_fitted_state"}
+{"timestamp":422613534738,"type":"state_enter","state_id":"tip_empty"}
+{"timestamp":422613535007,"type":"transition","from":"tip_empty","to":"tip_loaded","event":"C0AS"}
+{"timestamp":422613535067,"type":"state_exit","state_id":"tip_empty"}
+{"timestamp":422613536583,"type":"log","label":"FW","message":"Aspirate vol=1000 on 8 ch"}
+{"timestamp":422613536640,"type":"state_enter","state_id":"tip_loaded"}
+{"timestamp":422613536959,"type":"transition","from":"idle","to":"moving","event":"C0JM"}
+{"timestamp":422613537016,"type":"state_exit","state_id":"tip_loaded"}
+{"timestamp":422613537043,"type":"state_exit","state_id":"tip_fitted_state"}
+{"timestamp":422613537060,"type":"state_exit","state_id":"idle"}
+{"timestamp":422613538288,"type":"log","label":"FW","message":"Move to X=7000"}
+{"timestamp":422613538373,"type":"state_enter","state_id":"moving"}
+{"timestamp":422613538548,"type":"transition","from":"moving","to":"idle_history","event":"move.done"}
+{"timestamp":422613538589,"type":"state_exit","state_id":"moving"}
+{"timestamp":422613538627,"type":"state_enter","state_id":"idle"}
+{"timestamp":422613539180,"type":"state_enter","state_id":"tip_loaded"}
+{"timestamp":422613540740,"type":"transition","from":"tip_loaded","to":"tip_loaded","event":"C0DS"}
+{"timestamp":422613540827,"type":"state_exit","state_id":"tip_loaded"}
+{"timestamp":422613542894,"type":"log","label":"FW","message":"Partial vol=500 rem=4000"}
+{"timestamp":422613542956,"type":"state_enter","state_id":"tip_loaded"}
+{"timestamp":422613595166,"type":"event_received","event_name":"C0DS","event_type":"external","event_data":{"dv":500,"dm":0}}
+{"timestamp":422613595486,"type":"transition","from":"tip_loaded","to":"tip_empty","event":"C0DS"}
+{"timestamp":422613595655,"type":"state_exit","state_id":"tip_loaded"}
+{"timestamp":422613596707,"type":"log","label":"FW","message":"Jet disp vol=500"}
+{"timestamp":422613596784,"type":"state_enter","state_id":"tip_empty"}
+{"timestamp":422613649038,"type":"event_received","event_name":"C0TR","event_type":"external"}
+{"timestamp":422613649211,"type":"transition","from":"tip_empty","to":"no_tip","event":"C0TR"}
+{"timestamp":422613649408,"type":"state_exit","state_id":"tip_empty"}
+{"timestamp":422613649499,"type":"state_exit","state_id":"tip_fitted_state"}
+{"timestamp":422613650965,"type":"log","label":"FW","message":"Tip eject"}
+{"timestamp":422613651054,"type":"state_enter","state_id":"no_tip"}
+{"timestamp":422613703809,"type":"event_received","event_name":"C0AS","event_type":"external","event_data":{"av":100}}
+{"timestamp":422613758492,"type":"event_received","event_name":"C0DI","event_type":"external"}
+{"timestamp":422613810597,"type":"event_received","event_name":"C0TP","event_type":"external","event_data":{"tm":3,"tt":1}}
+{"timestamp":422613863190,"type":"event_received","event_name":"C0JM","event_type":"external","event_data":{"xp":50000}}</ext:trace></ext:traces>
+</scxml>

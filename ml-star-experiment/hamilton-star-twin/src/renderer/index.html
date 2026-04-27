@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hamilton STAR Digital Twin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Hamilton Microlab STAR &mdash; Digital Twin</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Arm</label>
+      <input type="range" id="arm-opacity" min="0" max="100" value="70" style="width:60px;accent-color:var(--accent-primary);">
+      <label for="sim-speed" style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;" title="Global simulation speed — applies to every command (raw, quick, protocol, MCP, VENUS bridge). Per-call overrides still win.">Speed</label>
+      <select id="sim-speed" title="Global simulation speed multiplier. Applies to raw commands, quick commands, protocol steps, MCP, and the VENUS bridge." style="font-size:9px;padding:3px 6px;background:var(--bg-input);border:1px solid var(--border-default);color:var(--text-secondary);border-radius:var(--radius-sm);">
+        <option value="0">Instant</option>
+        <option value="0.1">10x Speed</option>
+        <option value="0.25">4x Speed</option>
+        <option value="0.5">2x Speed</option>
+        <option value="1.0" selected>Real-time</option>
+        <option value="2.0">Half Speed</option>
+      </select>
+      <label title="Run init commands (C0VI/C0DI/C0EI/C0FI/C0II/C0JI) instantly even when Speed is Real-time. Homing takes ~70s at real speed — Fast Init skips it." style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text-secondary);cursor:pointer;">
+        <input type="checkbox" id="fast-init" style="margin:0;">
+        Fast Init
+      </label>
+      <div id="system-status" class="status-bar">NOT INITIALIZED</div>
+      <button id="header-cover" onclick="toggleCover()" title="Toggle the simulated front cover. VENUS blocks motion while open.">Cover: closed</button>
+      <button id="header-init" onclick="initAll()" title="Initialize all modules">Init All</button>
+      <button id="header-reset" onclick="resetTwin()" title="Reset twin (clear state, deck, events)">Reset</button>
+      <button onclick="window.open('/3d','star3d','width=1280,height=800')" title="Open 3D view in a separate window">3D&nbsp;view&nbsp;&#x2197;</button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme">&#9790;</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Module status cards -->
+    <section id="modules-panel">
+      <div id="module-grid">
+        <div class="module-card"><div class="module-name">Master</div><div class="module-state" id="state-master">--</div></div>
+        <div class="module-card"><div class="module-name">PIP Channels</div><div class="module-state" id="state-pip">--</div></div>
+        <div class="module-card"><div class="module-name">CoRe 96 Head</div><div class="module-state" id="state-h96">--</div></div>
+        <div class="module-card"><div class="module-name">iSWAP</div><div class="module-state" id="state-iswap">--</div></div>
+        <div class="module-card"><div class="module-name">AutoLoad</div><div class="module-state" id="state-autoload">--</div><div class="module-substat" id="stat-autoload"></div></div>
+        <div class="module-card"><div class="module-name">Wash Station</div><div class="module-state" id="state-wash">--</div></div>
+        <div class="module-card"><div class="module-name">Temperature</div><div class="module-state" id="state-temp">--</div></div>
+        <div class="module-card"><div class="module-name">CoRe 384 Head</div><div class="module-state" id="state-h384">--</div></div>
+        <div class="module-card"><div class="module-name">CO-RE Gripper</div><div class="module-state" id="state-gripper">--</div></div>
+        <div class="module-card"><div class="module-name">Heater/Shaker</div><div class="module-state" id="state-hhs">--</div></div>
+      </div>
+    </section>
+
+    <!-- Resize: modules <-> instrument -->
+    <div class="resize-handle resize-v" data-split="top"></div>
+
+    <!-- Instrument view: deck + channels + inspector -->
+    <section id="instrument-view">
+      <div id="deck-view">
+        <div class="deck-toolbar">
+          <h2 style="margin:0">Deck Layout</h2>
+          <div>
+            <button id="ghost-tool-btn" onclick="toggleGhostTool()" title="Ghost placement tool (G) — click to toggle, then click on the deck to place the ghost head">Ghost</button>
+            <button id="deck-zoom-out" onclick="zoomDeck(-1)" title="Zoom out 1.25× (or scroll wheel down)">&minus;</button>
+            <button id="deck-zoom-in"  onclick="zoomDeck(+1)" title="Zoom in 1.25× (or scroll wheel up)">+</button>
+            <button id="deck-fit" onclick="fitDeckToContent()" title="Fit the whole deck into the viewport (F). Pan: middle-click or Space+drag. Scroll: zoom. Double-click empty deck: fit.">Fit</button>
+          </div>
+        </div>
+        <svg id="deck-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="deck-tooltip" class="deck-tooltip"></div>
+        <div id="coord-display" style="display:none;font-size:9px;font-family:var(--font-mono);padding:3px 6px;color:var(--text-secondary);border-top:1px solid var(--border-subtle);"></div>
+        <!-- Phase 3 Step 3.8 — replay scrubber. TimelineScrubber.mount()
+             installs itself here on DOMContentLoaded; empty by default. -->
+        <div id="timeline-scrubber"></div>
+      </div>
+      <div class="resize-handle resize-h" data-split="deck-ch"></div>
+      <div id="channel-view">
+        <div class="channel-header">
+          <h2 style="margin:0">PIP Channels</h2>
+          <div id="pip-arm-coords" class="arm-coords">
+            <span class="arm-coord"><span class="arm-coord-label">X</span><span id="pip-arm-x" class="arm-coord-value">–</span></span>
+            <span class="arm-coord"><span class="arm-coord-label">Zmax</span><span id="pip-arm-zmax" class="arm-coord-value">–</span></span>
+            <span class="arm-coord"><span class="arm-coord-label">Ztrav</span><span id="pip-arm-ztrav" class="arm-coord-value">–</span></span>
+          </div>
+        </div>
+        <div id="channel-grid"></div>
+      </div>
+      <div class="resize-handle resize-h" data-split="ch-insp"></div>
+      <div id="inspector-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <h2 style="margin:0">Inspector</h2>
+          <span id="unresolved-badge" class="badge hidden" onclick="showUnresolved()" title="Unresolved interactions">0</span>
+        </div>
+        <div id="inspector-content">Click a carrier on the deck to inspect</div>
+      </div>
+    </section>
+
+    <!-- Resize: instrument <-> bottom -->
+    <div class="resize-handle resize-v" data-split="mid"></div>
+
+    <!-- Bottom: commands + variables + log -->
+    <div id="bottom-panels">
+      <section id="command-panel">
+        <div class="cmd-tabs">
+          <button class="cmd-tab active" data-tab="protocol" onclick="Twin.switchCmdTab('protocol')">Protocol Editor</button>
+          <button class="cmd-tab" data-tab="quick" onclick="Twin.switchCmdTab('quick')">Quick Commands</button>
+          <button class="cmd-tab" data-tab="raw" onclick="Twin.switchCmdTab('raw')">Raw FW</button>
+        </div>
+
+        <!-- Protocol Editor Tab -->
+        <div id="cmd-protocol" class="cmd-view">
+          <div class="proto-toolbar">
+            <select id="step-type-select" style="flex:1;">
+              <optgroup label="Pipetting">
+                <option value="easyTransfer">Easy Transfer</option>
+                <option value="easyAspirate">Easy Aspirate</option>
+                <option value="easyDispense">Easy Dispense</option>
+                <option value="aspirate">Aspirate</option>
+                <option value="dispense">Dispense</option>
+                <option value="dispenseFly">Dispense Fly</option>
+              </optgroup>
+              <optgroup label="Tips">
+                <option value="tipPickUp">Tip Pick Up</option>
+                <option value="tipEject">Tip Eject</option>
+              </optgroup>
+              <optgroup label="96-Head">
+                <option value="easy96Aspirate">Easy 96 Aspirate</option>
+                <option value="easy96Dispense">Easy 96 Dispense</option>
+                <option value="head96Move">96-Head Move</option>
+                <option value="head96TipPickUp">96-Head Tip Pick Up</option>
+              </optgroup>
+              <optgroup label="Transport">
+                <option value="easyTransport">Easy Transport (iSWAP)</option>
+                <option value="getPlate">iSWAP Get Plate</option>
+                <option value="putPlate">iSWAP Put Plate</option>
+              </optgroup>
+              <optgroup label="Power Steps">
+                <option value="transferSamples">Transfer Samples</option>
+                <option value="addReagent">Add Reagent</option>
+                <option value="serialDilution">Serial Dilution</option>
+              </optgroup>
+              <optgroup label="Setup">
+                <option value="fill">Fill (pre-fill wells with liquid)</option>
+              </optgroup>
+              <optgroup label="System">
+                <option value="setTemperature">Set Temperature</option>
+                <option value="wash">Wash</option>
+              </optgroup>
+            </select>
+            <button onclick="Twin.Protocol.addStep()" title="Add step to protocol">+ Add</button>
+          </div>
+          <div id="protocol-steps" class="proto-steps"></div>
+          <div class="proto-run-bar">
+            <button onclick="Twin.Protocol.runAll()" class="proto-run-btn">Run All</button>
+            <button onclick="Twin.Protocol.clearSteps()">Clear</button>
+            <span style="font-size:9px;color:var(--text-muted);">Speed/Fast-Init in header &#x2197;</span>
+            <span id="proto-status" class="proto-status"></span>
+          </div>
+          <div id="proto-results" class="proto-results"></div>
+        </div>
+
+        <!-- Quick Commands Tab -->
+        <div id="cmd-quick" class="cmd-view" style="display:none;">
+          <details class="btn-group" open>
+            <summary>Initialize</summary>
+            <div class="quick-btn-group">
+              <button onclick="initAll()">Init All</button>
+              <button onclick="quickCmd('C0VI')">System</button>
+              <button onclick="quickCmd('C0DI')">PIP</button>
+              <button onclick="quickCmd('C0EI')">96-Head</button>
+              <button onclick="quickCmd('C0FI')">iSWAP</button>
+              <button onclick="quickCmd('C0II')">AutoLoad</button>
+              <button onclick="quickCmd('C0JI')">384-Head</button>
+            </div>
+          </details>
+          <details class="btn-group" open>
+            <summary>PIP Actions</summary>
+            <div class="quick-btn-group">
+              <button onclick="quickCmd('C0TRtm255')">Eject Tips</button>
+              <button onclick="quickCmd('C0ZA')">Z-Safety</button>
+              <button onclick="quickCmd('C0JMxp01033')">Move to Tips</button>
+              <button onclick="quickCmd('C0JMxp02383')">Move to Plate</button>
+            </div>
+            <div style="padding:3px 0;font-size:8px;color:var(--text-muted);">Right-click wells/tips for aspirate, dispense, fill</div>
+          </details>
+          <details class="btn-group">
+            <summary>Temperature &amp; Transport</summary>
+            <div class="quick-btn-group">
+              <button onclick="quickCmd('C0HChn1hc0370')">TCC 37C</button>
+              <button onclick="quickCmd('C0HF')">TCC Off</button>
+              <button onclick="quickCmd('T1TAta0370')">HHS 37C</button>
+              <button onclick="quickCmd('T1SAsv0500')">Shake 500rpm</button>
+              <button onclick="quickCmd('T1SS')">Stop Shake</button>
+              <button onclick="quickCmd('C0WI')">Init Wash</button>
+            </div>
+          </details>
+        </div>
+
+        <!-- Raw FW Tab -->
+        <div id="cmd-raw" class="cmd-view" style="display:none;">
+          <div id="command-input-row">
+            <input type="text" id="command-input" placeholder="FW command or event name..."
+                   onkeydown="if(event.key==='Enter')sendInput()">
+            <button onclick="sendInput()">Send</button>
+            <button onclick="resetTwin()">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="resize-handle resize-h" data-split="cmd-var"></div>
+
+      <section id="variables-panel">
+        <h2>Variables</h2>
+        <div id="variables-grid"></div>
+      </section>
+
+      <div class="resize-handle resize-h" data-split="var-log"></div>
+
+      <section id="log-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
+          <h2 style="margin:0">Event Log</h2>
+          <label title="Hide C0TT tip-type registration spam (~68/method load)"
+                 style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text-secondary);cursor:pointer;">
+            <input type="checkbox" id="log-hide-c0tt" style="margin:0;">
+            hide C0TT
+          </label>
+          <input type="text" id="log-filter" placeholder="filter..." style="background:var(--bg-input);border:1px solid var(--border-default);color:var(--text-secondary);padding:2px 8px;border-radius:var(--radius-sm);font-size:9px;width:80px;font-family:var(--font-mono);">
+        </div>
+        <div id="log-entries"></div>
+      </section>
+
+      <div class="resize-handle resize-h" data-split="log-assess"></div>
+
+      <section id="assessment-panel">
+        <div class="assess-header">
+          <h2 style="margin:0">Assessment</h2>
+          <div class="assess-tabs">
+            <button class="assess-tab active" data-tab="tadm" onclick="switchAssessTab('tadm')">TADM</button>
+            <button class="assess-tab" data-tab="events" onclick="switchAssessTab('events')">Events</button>
+            <button class="assess-tab" data-tab="contam" onclick="switchAssessTab('contam')">Contamination</button>
+          </div>
+        </div>
+        <div id="tadm-view" class="assess-view">
+          <div id="tadm-channel-chips" class="tadm-chip-row"></div>
+          <canvas id="tadm-canvas"></canvas>
+          <div id="tadm-info">No TADM data — send an aspirate or dispense command</div>
+        </div>
+        <div id="events-view" class="assess-view" style="display:none">
+          <div id="assessment-events"></div>
+        </div>
+        <div id="contam-view" class="assess-view" style="display:none">
+          <div id="contam-channels"></div>
+          <div id="contam-events"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

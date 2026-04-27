@@ -1,0 +1,63 @@
+node_modules/
+dist/
+!hamilton-star-twin/dist/state-machines/
+!hamilton-star-twin/dist/state-machines/**
+*.zip
+
+# Generated files that can be rebuilt
+hamilton-star-twin/dist/
+# Keep SCXML-generated state machines (compiled by VSCXML tools from scxml/*.scxml)
+!hamilton-star-twin/dist/state-machines/
+!hamilton-star-twin/dist/state-machines/**
+hamilton-star-twin/node_modules/
+
+# Dropbox conflicts
+*conflicted*
+
+# OS
+Thumbs.db
+.DS_Store
+
+# VENUS source (too large, reference only)
+Venus-2026-04-13.zip
+VENUS-2026-04-13/
+
+# Command set zip
+Command sets (13.04.2026).zip
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Large PDFs (reference only, stored in Dropbox)
+*.pdf
+
+# Extracted text (can be regenerated)
+Command sets (13.04.2026)/extracted_text/
+
+# Word docs (source FW docs, large)
+Command sets (13.04.2026)/*.doc
+Command sets (13.04.2026)/*.docx
+Command sets (13.04.2026)/~$*
+
+# Electron-builder output (built installer + unpacked app; large)
+installer/dist-installer/
+
+# Local backup / WIP files
+*.bak
+
+# Playwright session cache
+.playwright-mcp/
+
+# Vitest + visual-regression outputs
+hamilton-star-twin/coverage/
+hamilton-star-twin/test-results/
+
+# Electron startup error log (runtime artifact)
+hamilton-star-twin/electron_err.log
+
+# Screenshots captured during manual/Playwright testing at repo root
+/*.png
+
+# Claude Code local project cache
+.claude/

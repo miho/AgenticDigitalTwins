@@ -1,0 +1,25 @@
+{
+  "generator" : "VSCXML-Generator-CLI",
+  "generatorVersion" : "0.1.0",
+  "generatedAt" : "2026-04-13T15:57:04.724703400Z",
+  "config" : {
+    "normalizedTarget" : "javascript",
+    "scxml" : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" xmlns:editor=\"http://vscxml.com/editor\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"operational\" name=\"HamiltonSTAR_WashStation\">\n  <datamodel>\n    <data id=\"station_number\" expr=\"1\"/>\n    <data id=\"fluid_ok\" expr=\"true\"/>\n    <data id=\"wash_cycles_remaining\" expr=\"0\"/>\n    <data id=\"last_error\" expr=\"0\"/>\n  </datamodel>\n  <state id=\"operational\" initial=\"not_initialized\" editor:x=\"100\" editor:y=\"150\" editor:width=\"300\" editor:height=\"250\" editor:label=\"operational\" editor:color=\"#1e2a3a\" editor:zIndex=\"0\">\n    <state id=\"not_initialized\" editor:x=\"110\" editor:y=\"140\" editor:width=\"175\" editor:height=\"75\" editor:label=\"not_initialized\" editor:color=\"#2a2a3c\" editor:zIndex=\"1\">\n      <transition target=\"idle_ws\" event=\"C0WI\" editor:id=\"t_01KP3PWBKN8CJ302KCWAE6PNSG\">\n        <log expr=\"'Init wash station'\" label=\"FW\"/>\n      </transition>\n    </state>\n    <state id=\"idle_ws\" editor:x=\"110\" editor:y=\"260\" editor:width=\"125\" editor:height=\"75\" editor:label=\"idle_ws\" editor:color=\"#2a2a3c\" editor:zIndex=\"2\">\n      <transition target=\"washing_ws\" event=\"C0WS\" editor:id=\"t_01KP3PWBKNGE4854VNZ0VFKQFG\">\n        <log expr=\"'Start wash (G3)'\" label=\"FW\"/>\n      </transition>\n      <transition target=\"washing_ws\" event=\"C0WC\" editor:id=\"t_01KP3PWBKNVJPSTT5DZGYEHVDM\">\n        <log expr=\"'Start wash (CR)'\" label=\"FW\"/>\n      </transition>\n      <transition target=\"waiting_ws\" event=\"C0WW\" editor:id=\"t_01KP3PWBKN6935M4ETK8AYSHPE\">\n        <log expr=\"'Wait for wash'\" label=\"FW\"/>\n      </transition>\n      <transition target=\"washing_ws\" event=\"C0WR\" editor:id=\"t_01KP3PWBKN6JF59M4Y5WF095E1\">\n        <log expr=\"'Repeat wash'\" label=\"FW\"/>\n      </transition>\n      <transition target=\"idle_ws\" event=\"C0QF\" editor:id=\"t_01KP3PWBKNQPWMAVN8W46AWQ9K\">\n        <log expr=\"'Query fluid status'\" label=\"FW\"/>\n      </transition>\n    </state>\n    <state id=\"washing_ws\" editor:x=\"110\" editor:y=\"380\" editor:width=\"125\" editor:height=\"75\" editor:label=\"washing_ws\" editor:color=\"#2a2a3c\" editor:zIndex=\"3\">\n      <transition target=\"idle_ws\" event=\"wash_ws.done\" editor:id=\"t_01KP3PWBKN4XK62KWQGZM90B2P\">\n        <log expr=\"'Wash complete'\" label=\"FW\"/>\n      </transition>\n      <transition target=\"error_ws\" event=\"wash_ws.error\" editor:id=\"t_01KP3PWBKNEKBSPWX0MYSJCE60\">\n        <assign location=\"last_error\" expr=\"18\"/>\n      </transition>\n    </state>\n    <state id=\"waiting_ws\" editor:x=\"110\" editor:y=\"500\" editor:width=\"125\" editor:height=\"75\" editor:label=\"waiting_ws\" editor:color=\"#2a2a3c\" editor:zIndex=\"4\">\n      <transition target=\"idle_ws\" event=\"wait_ws.done\" editor:id=\"t_01KP3PWBKNPHYQSRAR946TW68Q\"/>\n    </state>\n    <state id=\"error_ws\" editor:x=\"110\" editor:y=\"620\" editor:width=\"125\" editor:height=\"75\" editor:label=\"error_ws\" editor:color=\"#2a2a3c\" editor:zIndex=\"5\">\n      <onentry>\n        <log expr=\"'Wash error ' + last_error\" label=\"ERROR\"/>\n      </onentry>\n      <transition target=\"not_initialized\" event=\"C0WI\" editor:id=\"t_01KP3PWBKNQ58KEZM9TJ828Z26\">\n        <assign location=\"last_error\" expr=\"0\"/>\n      </transition>\n    </state>\n  </state>\n</scxml>",
+    "scxmlPath" : null,
+    "target" : "javascript",
+    "options" : {
+      "packageName" : null,
+      "namespace" : null,
+      "className" : "WashStationSM",
+      "bundleAuto" : false,
+      "bundle" : [ ],
+      "codeOnly" : true,
+      "amalgamate" : false,
+      "bundleRuntime" : false,
+      "runtimePath" : null,
+      "plcPlatform" : null,
+      "eventQueueDepth" : 16,
+      "tracingMode" : null
+    }
+  }
+}

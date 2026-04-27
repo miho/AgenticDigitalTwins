@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hamilton STAR Labware Definition",
+  "description": "Defines the geometry and properties of a labware item for the digital twin. Supports standard plates, custom well shapes, tubes, troughs, and tip racks.",
+  "type": "object",
+  "required": ["type", "category", "geometry"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Unique labware type identifier (e.g. 'Cos_96_Rd', 'Tips_1000uL')"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["plate", "tip_rack", "tube_carrier", "trough", "custom"],
+      "description": "Labware category"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "manufacturer": {
+      "type": "string"
+    },
+    "geometry": {
+      "type": "object",
+      "required": ["rows", "columns", "wellPitch"],
+      "properties": {
+        "rows": { "type": "integer", "minimum": 1, "description": "Number of rows (A-H for 96-well = 8)" },
+        "columns": { "type": "integer", "minimum": 1, "description": "Number of columns (1-12 for 96-well = 12)" },
+        "wellPitch": { "type": "number", "description": "Center-to-center distance between wells (0.1mm). 90 for 96-well, 45 for 384-well" },
+        "wellShape": {
+          "type": "string",
+          "enum": ["round", "square", "conical", "v_bottom", "flat", "round_bottom", "custom"],
+          "description": "Well bottom shape"
+        },
+        "wellDepth": { "type": "number", "description": "Well depth from top to bottom (0.1mm)" },
+        "wellDiameterTop": { "type": "number", "description": "Well opening diameter at top (0.1mm)" },
+        "wellDiameterBottom": { "type": "number", "description": "Well diameter at bottom (0.1mm, for conical wells)" },
+        "wellVolume": { "type": "number", "description": "Maximum well volume (0.1ul)" },
+        "cornerRadius": { "type": "number", "description": "Corner radius for square wells (0.1mm)" }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "description": "Overall labware dimensions",
+      "properties": {
+        "length": { "type": "number", "description": "Length along X-axis (0.1mm)" },
+        "width": { "type": "number", "description": "Width along Y-axis (0.1mm)" },
+        "height": { "type": "number", "description": "Total height above carrier surface (0.1mm)" },
+        "flangeHeight": { "type": "number", "description": "Height of the flange/skirt (0.1mm)" }
+      }
+    },
+    "positions": {
+      "type": "object",
+      "description": "Well position offsets relative to labware origin (A1 corner)",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": ["grid", "custom"],
+          "description": "Well layout type"
+        },
+        "offsetX": { "type": "number", "description": "Offset from labware left edge to first column center (0.1mm)" },
+        "offsetY": { "type": "number", "description": "Offset from labware front edge to first row center (0.1mm)" },
+        "customPositions": {
+          "type": "array",
+          "description": "For non-grid layouts: explicit (x,y) offsets per well",
+          "items": {
+            "type": "object",
+            "properties": {
+              "row": { "type": "integer" },
+              "column": { "type": "integer" },
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "liquidHandling": {
+      "type": "object",
+      "description": "Parameters relevant for pipetting",
+      "properties": {
+        "deadVolume": { "type": "number", "description": "Minimum unreachable volume at well bottom (0.1ul)" },
+        "touchOffDistance": { "type": "number", "description": "Distance from wall for side touch (0.1mm)" },
+        "cLLDSensitivity": { "type": "string", "enum": ["high", "medium", "low", "very_low"] },
+        "material": { "type": "string", "enum": ["polystyrene", "polypropylene", "glass", "pcr", "other"] }
+      }
+    }
+  }
+}

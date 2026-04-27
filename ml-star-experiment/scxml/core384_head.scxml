@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_CoRe384Head">
+  <datamodel>
+    <data id="tips_fitted" expr="false"/>
+    <data id="tip_type" expr="-1"/>
+    <data id="volume_01ul" expr="0"/>
+    <data id="pos_x" expr="0"/>
+    <data id="pos_y" expr="0"/>
+    <data id="pos_z" expr="0"/>
+    <!-- Y-bounds: real STAR y_min/y_max are instrument-specific, set at
+         init from the master's calibration. These defaults cover the
+         standard 54-track deck; override via C0JI payload if ever
+         needed. No ad-hoc "magic" literals elsewhere in the SM. -->
+    <data id="y_min" expr="1054"/>
+    <data id="y_max" expr="5743"/>
+    <data id="last_error" expr="0"/>
+    <data id="lld_mode" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized">
+    <state id="not_initialized">
+      <transition target="no_tips384" event="C0JI">
+        <assign location="tips_fitted" expr="false"/>
+        <assign location="volume_01ul" expr="0"/>
+        <assign location="last_error" expr="0"/>
+        <assign location="pos_x" expr="_event.data.xs||0"/>
+        <assign location="pos_y" expr="_event.data.yk||0"/>
+        <log expr="'Init 384 Head'" label="FW"/>
+      </transition>
+    </state>
+    <state id="idle384" initial="no_tips384">
+      <!-- Deep history: preserves tip sub-state (no_tips384/tips_empty384/tips_loaded384) after move -->
+      <history id="idle384_history" type="deep">
+        <transition target="no_tips384"/>
+      </history>
+      <!-- Move absolute. Real Hamilton params (per AtsMc384HeadMoveAbs.cpp):
+           xs = X (5d), xd = X dir, yk = Y (4d), je = Z (4d), zf =
+           traverse. Earlier versions of this SM accepted `yh`/`zh` — a
+           copy from the 96-head command — which silently mismatched
+           every real C0EN. -->
+      <transition target="moving384" event="C0EN" cond="_event.data.yk===undefined||(_event.data.yk&gt;=y_min&amp;&amp;_event.data.yk&lt;=y_max)">
+        <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+        <assign location="pos_y" expr="_event.data.yk||pos_y"/>
+        <assign location="pos_z" expr="_event.data.je!==undefined?_event.data.je:(_event.data.zf!==undefined?_event.data.zf:pos_z)"/>
+        <log expr="'384 Move X='+pos_x+' Y='+pos_y+' Z='+pos_z" label="FW"/>
+      </transition>
+      <transition target="error384" event="C0EN" cond="_event.data.yk!==undefined&amp;&amp;(_event.data.yk&lt;y_min||_event.data.yk&gt;y_max)">
+        <assign location="last_error" expr="27"/>
+        <log expr="'Y out of range (error 27)'" label="ERROR"/>
+      </transition>
+      <!-- Safety move Y — also uses `yk` per the AtsMc384HeadSafetyMoveY.cpp. -->
+      <transition target="idle384" event="C0EY">
+        <assign location="pos_y" expr="_event.data.yk||pos_y"/>
+        <log expr="'384 Safety move Y='+pos_y" label="FW"/>
+      </transition>
+      <!-- Query: request position -->
+      <transition target="idle384" event="C0QJ">
+        <log expr="'384 Position: X='+pos_x+' Y='+pos_y+' Z='+pos_z" label="FW"/>
+      </transition>
+      <!-- Query: request tips -->
+      <transition target="idle384" event="C0QK">
+        <log expr="'384 Tips: '+(tips_fitted?'fitted':'none')" label="FW"/>
+      </transition>
+      <!-- Query: request head type -->
+      <transition target="idle384" event="C0QY">
+        <log expr="'384 Head type: CO-RE 384'" label="FW"/>
+      </transition>
+
+      <state id="no_tips384">
+        <transition target="tips_empty384" event="C0JB">
+          <assign location="tips_fitted" expr="true"/>
+          <assign location="tip_type" expr="_event.data.tt||0"/>
+          <log expr="'384 Tip pickup type='+(_event.data.tt||0)" label="FW"/>
+        </transition>
+        <!-- Aspirate without tips = error -->
+        <transition target="error384" event="C0JA">
+          <assign location="last_error" expr="8"/>
+          <log expr="'384 No tips (error 08)'" label="ERROR"/>
+        </transition>
+        <transition target="error384" event="C0JD">
+          <assign location="last_error" expr="8"/>
+          <log expr="'384 No tips (error 08)'" label="ERROR"/>
+        </transition>
+      </state>
+
+      <state id="tips_on384" initial="tips_empty384">
+        <!-- Tip eject -->
+        <transition target="no_tips384" event="C0JC">
+          <assign location="tips_fitted" expr="false"/>
+          <assign location="volume_01ul" expr="0"/>
+          <log expr="'384 Tip eject'" label="FW"/>
+        </transition>
+        <!-- Wash -->
+        <transition target="washing384" event="C0JG">
+          <assign location="volume_01ul" expr="0"/>
+          <log expr="'384 Wash'" label="FW"/>
+        </transition>
+        <!-- Empty washed tips -->
+        <transition target="tips_empty384" event="C0JU">
+          <assign location="volume_01ul" expr="0"/>
+          <log expr="'384 Empty washed tips'" label="FW"/>
+        </transition>
+
+        <state id="tips_empty384">
+          <onentry>
+            <assign location="volume_01ul" expr="0"/>
+          </onentry>
+          <transition target="tips_loaded384" event="C0JA">
+            <assign location="volume_01ul" expr="_event.data.af||0"/>
+            <assign location="lld_mode" expr="_event.data.lm||0"/>
+            <log expr="'384 Asp vol='+(_event.data.af||0)+' lld='+(_event.data.lm||0)" label="FW"/>
+          </transition>
+        </state>
+
+        <state id="tips_loaded384">
+          <!-- Partial dispense (multi-dispense modes 2,3) -->
+          <transition target="tips_loaded384" event="C0JD" cond="_event.data.da==2||_event.data.da==3">
+            <assign location="volume_01ul" expr="Math.max(0,volume_01ul-(_event.data.df||0))"/>
+            <log expr="'384 Partial disp vol='+(_event.data.df||0)" label="FW"/>
+          </transition>
+          <!-- Full dispense (jet empty) -->
+          <transition target="tips_empty384" event="C0JD">
+            <assign location="volume_01ul" expr="Math.max(0,volume_01ul-(_event.data.df||0))"/>
+            <log expr="'384 Jet disp vol='+(_event.data.df||0)" label="FW"/>
+          </transition>
+        </state>
+      </state>
+    </state>
+
+    <state id="moving384">
+      <onentry>
+        <send event="move384.done" delayexpr="_event.data._delay || '500ms'" id="move384_timer"/>
+      </onentry>
+      <transition target="idle384_history" event="move384.done"/>
+    </state>
+
+    <state id="washing384">
+      <onentry>
+        <send event="wash384.done" delayexpr="_event.data._delay || '3000ms'" id="wash384_timer"/>
+      </onentry>
+      <transition target="tips_empty384" event="wash384.done"/>
+    </state>
+
+    <state id="error384">
+      <onentry>
+        <log expr="'384Head error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0JI">
+        <assign location="last_error" expr="0"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

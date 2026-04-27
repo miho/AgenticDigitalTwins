@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="operational" name="HamiltonSTAR_iSWAP">
+  <datamodel>
+    <data id="plate_gripped" expr="false"/>
+    <data id="grip_width_01mm" expr="0"/>
+    <data id="grip_force" expr="9"/>
+    <data id="pos_x" expr="0"/>
+    <data id="pos_y" expr="0"/>
+    <data id="pos_z" expr="0"/>
+    <!-- Plate orientation in degrees. Hamilton's `gr` FW param is a
+         1-digit flag (0 = landscape, 1 = portrait); we store degrees
+         (0 or 90) so the renderer can interpolate smoothly during a
+         rotate-while-grab. -->
+    <data id="plate_rotation_deg" expr="0"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="operational" initial="not_initialized" editor:x="12" editor:y="12" editor:width="1802" editor:height="810" editor:label="operational" editor:color="#1e2a3a" editor:zIndex="0">
+    <state id="not_initialized" editor:x="1254" editor:y="456" editor:width="225" editor:height="75" editor:label="not_initialized" editor:color="#2a2a3c" editor:zIndex="1">
+      <transition target="parked" event="C0FI" editor:id="t_01KP5AHR3Q7EVN5GTSGFXM6N20">
+        <assign location="plate_gripped" expr="false"/>
+        <assign location="grip_width_01mm" expr="0"/>
+        <assign location="plate_rotation_deg" expr="0"/>
+        <assign location="last_error" expr="0"/>
+        <log expr="'Init iSWAP'" label="FW"/>
+      </transition>
+    </state>
+    <state id="parked" editor:x="1622" editor:y="456" editor:width="150" editor:height="75" editor:label="parked" editor:color="#2a2a3c" editor:zIndex="2">
+      <!-- Re-init / re-park while already parked is a no-op. VENUS
+           sends C0PG (with th<height>) repeatedly during its pre-
+           method setup, even when the iSWAP never moved — real FW
+           accepts this idempotently. -->
+      <transition target="parked" event="C0FI"/>
+      <transition target="parked" event="C0PG"/>
+      <transition target="empty" event="C0FY" editor:waypoints="1599,524;1599,770;42,770;42,575;510,575;510,551" editor:labelRotation="-90" editor:id="t_01KP5AHR3QDWMDYHNYVBMVG9YQ">
+        <log expr="'iSWAP free Y range'" label="FW"/>
+      </transition>
+    </state>
+    <state id="ready" initial="empty" editor:x="190" editor:y="255" editor:width="503" editor:height="428" editor:label="ready" editor:color="#1e2a3a" editor:zIndex="3">
+      <!-- VENUS re-sends C0FI on every method run; real FW accepts
+           re-init idempotently while ready. -->
+      <transition target="ready" event="C0FI"/>
+      <transition target="parked" event="C0PG" editor:waypoints="825,402;825,452;1506,452;1506,487" editor:id="t_01KP5JRM1EYSA2RGK12KZ8KNJ1">
+        <log expr="'iSWAP park'" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0GX" editor:waypoints="783,300;783,245;100,245;100,573" editor:id="t_01KP5JRM1EZWCTH6QQS20WK58Q">
+        <assign location="pos_x" expr="_event.data.gx||pos_x"/>
+        <log expr="'iSWAP X='+(_event.data.gx||pos_x)" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0GY" editor:waypoints="793,310;793,215;90,215;90,583" editor:id="t_01KP5JRM1E2P9221WRSXNK762K">
+        <assign location="pos_y" expr="_event.data.gy||pos_y"/>
+        <log expr="'iSWAP Y='+(_event.data.gy||pos_y)" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0GZ" editor:waypoints="803,320;803,185;80,185;80,593" editor:id="t_01KP5JRM1EW6SA341208W98XBJ">
+        <assign location="pos_z" expr="_event.data.gz||pos_z"/>
+        <log expr="'iSWAP Z='+(_event.data.gz||pos_z)" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0PN" editor:waypoints="813,330;813,155;70,155;70,603" editor:id="t_01KP5JRM1E8E4BESB2MJ436TQN">
+        <log expr="'iSWAP collapse arm'" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0PT" editor:waypoints="823,340;823,125;60,125;60,613" editor:id="t_01KP5JRM1EZ46V40G5779SWYNC">
+        <log expr="'iSWAP prepare for teaching'" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0RG" editor:waypoints="833,350;833,95;50,95;50,623" editor:id="t_01KP5JRM1EAMMHV37FYMHNC1XZ">
+        <log expr="'iSWAP park status: not parked'" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0QP" editor:waypoints="843,360;843,65;40,65;40,633" editor:id="t_01KP5JRM1EFAGVFRHCXT3V6502">
+        <log expr="'Plate in iSWAP: '+plate_gripped" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0QG" editor:waypoints="793,370;793,723;90,723;90,643" editor:id="t_01KP5JRM1EK34C1A86W1GAXKR2">
+        <log expr="'iSWAP pos: X='+pos_x+' Y='+pos_y+' Z='+pos_z" label="FW"/>
+      </transition>
+      <transition target="ready" event="C0PC" editor:waypoints="783,380;783,693;100,693;100,653" editor:id="t_01KP5JRM1EPWPY0DBB1DJ48CYF">
+        <log expr="'iSWAP logic position'" label="FW"/>
+      </transition>
+      <state id="empty" editor:x="323" editor:y="221" editor:width="150" editor:height="75" editor:label="empty" editor:color="#2a2a3c" editor:zIndex="4">
+        <transition target="gripped" event="C0PP" editor:waypoints="500,513;500,474" editor:id="t_01KP5AHR3QK5FJFZYER9HQ5F88">
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <assign location="pos_y" expr="_event.data.yj||pos_y"/>
+          <assign location="pos_z" expr="_event.data.zj||pos_z"/>
+          <!-- Grip width: C0PP carries `gb` (4-digit 0.1mm base width)
+               or `gw` (1-digit width-selector enum, 100-0.1mm steps).
+               Fall back to `yg` (legacy mapping) for older tests. -->
+          <assign location="grip_width_01mm" expr="_event.data.gb!==undefined?_event.data.gb:(_event.data.gw!==undefined?_event.data.gw*100:(_event.data.yg||0))"/>
+          <!-- Plate orientation from `gr`: 0 → 0° (landscape), 1 → 90° (portrait). -->
+          <assign location="plate_rotation_deg" expr="_event.data.gr?90:0"/>
+          <assign location="plate_gripped" expr="true"/>
+          <log expr="'iSWAP get plate at X='+pos_x+' rot='+plate_rotation_deg+'°'" label="FW"/>
+        </transition>
+        <transition target="empty" event="C0GF" editor:waypoints="383,211;413,211" editor:id="t_01KP5AHR3Q198R3G1J5DFPQG0W">
+          <log expr="'iSWAP open gripper'" label="FW"/>
+        </transition>
+        <transition target="gripped" event="C0PO" editor:waypoints="490,526;490,506;417,506;417,486" editor:id="t_01KP5AHR3QM5SDQBB7PMV14R36">
+          <assign location="plate_gripped" expr="true"/>
+          <log expr="'iSWAP get from hotel'" label="FW"/>
+        </transition>
+        <transition target="error_iswap" event="C0PR" editor:waypoints="888,538;888,524" editor:labelRotation="-90" editor:id="t_01KP5AHR3Q6G85PJSKV2AG17J2">
+          <assign location="last_error" expr="22"/>
+          <log expr="'No plate gripped (error 22)'" label="ERROR"/>
+        </transition>
+        <transition target="error_iswap" event="C0PM" editor:waypoints="815,513;815,506" editor:id="t_01KP5AHR3Q5TPD193QZPTWS17N">
+          <assign location="last_error" expr="22"/>
+          <log expr="'No plate to move (error 22)'" label="ERROR"/>
+        </transition>
+        <transition target="empty" event="C0PB" editor:waypoints="353,181;443,181" editor:id="t_01KP5AHR3QR14M86BFBDCVDM3X">
+          <log expr="'iSWAP read barcode (empty)'" label="FW"/>
+        </transition>
+      </state>
+      <state id="gripped" editor:x="30" editor:y="169" editor:width="150" editor:height="75" editor:label="gripped" editor:color="#2a2a3c" editor:zIndex="5">
+        <transition target="empty" event="C0PR" editor:waypoints="407,499;407,538" editor:id="t_01KP5AHR3QW7Y9VX1NRW0FDW3H">
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <assign location="pos_y" expr="_event.data.yj||pos_y"/>
+          <assign location="pos_z" expr="_event.data.zj||pos_z"/>
+          <!-- Releasing the plate drops the grip to its "open" width (go). -->
+          <assign location="grip_width_01mm" expr="_event.data.go!==undefined?_event.data.go:0"/>
+          <assign location="plate_gripped" expr="false"/>
+          <log expr="'iSWAP put plate at X='+pos_x" label="FW"/>
+        </transition>
+        <transition target="gripped" event="C0PM" editor:waypoints="90,159;120,159" editor:id="t_01KP5AHR3QW9CJYSG3PAE3H7DV">
+          <assign location="pos_x" expr="_event.data.xs||pos_x"/>
+          <assign location="pos_y" expr="_event.data.yj||pos_y"/>
+          <assign location="pos_z" expr="_event.data.zj||pos_z"/>
+          <!-- A move-with-plate can also reorient via `gr`. -->
+          <assign location="plate_rotation_deg" expr="_event.data.gr!==undefined?(_event.data.gr?90:0):plate_rotation_deg"/>
+          <log expr="'iSWAP move plate to X='+pos_x+' rot='+plate_rotation_deg+'°'" label="FW"/>
+        </transition>
+        <transition target="gripped" event="C0PB" editor:waypoints="60,129;150,129" editor:id="t_01KP5AHR3QE40CG9V77MJ9XY76">
+          <log expr="'iSWAP read barcode (plate held)'" label="FW"/>
+        </transition>
+        <transition target="empty" event="C0PI" editor:waypoints="417,461;417,442;510,442;510,501" editor:id="t_01KP5AHR3QWNMTTC23VM1S0BN5">
+          <assign location="plate_gripped" expr="false"/>
+          <log expr="'iSWAP put to hotel'" label="FW"/>
+        </transition>
+        <transition target="error_iswap" event="C0PP" editor:waypoints="382,449;382,412;815,412;815,468;888,468;888,487" editor:id="t_01KP5AHR3QQ2CV7ZGVGQEXGH1E">
+          <assign location="last_error" expr="22"/>
+          <log expr="'Already gripping plate (error 22)'" label="ERROR"/>
+        </transition>
+      </state>
+    </state>
+    <state id="error_iswap" editor:x="911" editor:y="456" editor:width="200" editor:height="75" editor:label="error_iswap" editor:color="#2a2a3c" editor:zIndex="6">
+      <onentry>
+        <log expr="'iSWAP error '+last_error" label="ERROR"/>
+      </onentry>
+      <transition target="not_initialized" event="C0FI" editor:id="t_01KP5AHR3QNPX86Y0Q0J549E94">
+        <assign location="last_error" expr="0"/>
+        <log expr="'iSWAP re-init'" label="FW"/>
+      </transition>
+    </state>
+  </state>
+</scxml>

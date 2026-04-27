@@ -1,0 +1,141 @@
+name: test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+defaults:
+  run:
+    working-directory: hamilton-star-twin
+
+jobs:
+  unit:
+    name: build + unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hamilton-star-twin/package-lock.json
+      # Use `npm install` instead of `npm ci` because the lock file is
+      # generated on Windows (primary dev platform) and misses a few
+      # Linux-only optional deps (e.g. @emnapi/core). `npm ci` is
+      # strict about sync and refuses; `npm install` resolves the
+      # missing transitives for the runner platform.
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      # `venus-import.test.ts` needs the VENUS-2026-04-13 test-tree
+      # fixture which isn't checked into the repo (it's part of the
+      # VENUS integration test mirror sitting next to the working
+      # copy on the dev machine). Skip on CI; dev machines still run
+      # it.
+      - run: npx vitest run tests/unit --exclude "**/venus-import.test.ts"
+
+  fw-integration:
+    name: fw-server + trace-replay + twin-guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hamilton-star-twin/package-lock.json
+      # Use `npm install` instead of `npm ci` because the lock file is
+      # generated on Windows (primary dev platform) and misses a few
+      # Linux-only optional deps (e.g. @emnapi/core). `npm ci` is
+      # strict about sync and refuses; `npm install` resolves the
+      # missing transitives for the runner platform.
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      # Core FW/trace contract tests (existing) + twin-guard tests added
+      # 2026-04-19. The guard tests are in-process (createTestTwin) so
+      # they don't need a running server or Playwright.
+      # `fw-bridge-asp-disp-volume` needs Method1.lay to exercise the
+      # VENUS-imported carrier path — it skips gracefully on CI where
+      # the Hamilton install is unavailable (see its beforeAll guard).
+      # `fw-trace-replay.test.ts` loads the TipPickup1ml_ComTrace.trc
+      # from the VENUS integration test tree which isn't in the repo —
+      # run it locally where the VENUS test data lives, skip on CI.
+      - run: |
+          npx vitest run \
+            tests/integration/fw-server.test.ts \
+            tests/integration/contamination-multichannel.test.ts \
+            tests/integration/no-deck-effect-guard.test.ts \
+            tests/integration/fw-bridge-asp-disp-volume.test.ts
+
+  e2e-click-routing:
+    name: e2e (click-routing on Method1.lay)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The entire suite is a regression check against a real Method1.lay
+    # (Hamilton install, Windows-only). On CI the beforeEach hangs in
+    # deck-load because the fixture path doesn't exist — keep the job
+    # in the workflow so infrastructure breakage (browser fixture,
+    # server setup, renderer bundle) still surfaces here, but don't
+    # block master on tests that can only run against a VENUS install.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hamilton-star-twin/package-lock.json
+      # Use `npm install` instead of `npm ci` because the lock file is
+      # generated on Windows (primary dev platform) and misses a few
+      # Linux-only optional deps (e.g. @emnapi/core). `npm ci` is
+      # strict about sync and refuses; `npm install` resolves the
+      # missing transitives for the runner platform.
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      # The click-routing e2e skips every assertion gracefully when
+      # Method1.lay isn't on disk (the Hamilton install isn't on the
+      # CI image). We still run it so any infrastructure breakage —
+      # browser fixture, server setup, renderer bundle — surfaces
+      # here, and so a developer with a local Hamilton install can
+      # rerun the same matrix and get the full coverage.
+      - run: npx vitest run tests/e2e/click-routing.test.ts
+
+  visual:
+    name: tutorial-screenshots (pixelmatch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Pixel baselines are captured on Windows (primary dev platform);
+    # Linux CI renders fonts + anti-aliasing slightly differently and
+    # produces sub-pixel drifts that the 0.3 % mismatch ratio flags.
+    # Keep the job running so we still get visual-diff artifacts as a
+    # review aid, but don't block master on the comparison.
+    continue-on-error: true
+    env:
+      VISUAL_COMPARE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hamilton-star-twin/package-lock.json
+      # Use `npm install` instead of `npm ci` because the lock file is
+      # generated on Windows (primary dev platform) and misses a few
+      # Linux-only optional deps (e.g. @emnapi/core). `npm ci` is
+      # strict about sync and refuses; `npm install` resolves the
+      # missing transitives for the runner platform.
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx vitest run tests/integration/tutorial-screenshots.test.ts
+      - name: upload pixel diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff
+          path: hamilton-star-twin/test-results/visual-diff/*.png
+          if-no-files-found: ignore

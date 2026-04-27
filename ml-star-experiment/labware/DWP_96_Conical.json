@@ -1,0 +1,32 @@
+{
+  "type": "DWP_96_Conical",
+  "category": "plate",
+  "description": "96-well deep well plate with conical bottom (e.g. Eppendorf, Axygen)",
+  "geometry": {
+    "rows": 8,
+    "columns": 12,
+    "wellPitch": 90,
+    "wellShape": "conical",
+    "wellDepth": 420,
+    "wellDiameterTop": 82,
+    "wellDiameterBottom": 20,
+    "wellVolume": 20000
+  },
+  "dimensions": {
+    "length": 1276,
+    "width": 855,
+    "height": 440,
+    "flangeHeight": 25
+  },
+  "positions": {
+    "layout": "grid",
+    "offsetX": 145,
+    "offsetY": 115
+  },
+  "liquidHandling": {
+    "deadVolume": 300,
+    "touchOffDistance": 12,
+    "cLLDSensitivity": "medium",
+    "material": "polypropylene"
+  }
+}

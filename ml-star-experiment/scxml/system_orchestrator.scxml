@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="system" name="HamiltonSTAR_System">
+  <datamodel>
+    <data id="instrument_initialized" expr="false"/>
+    <data id="left_arm_x" expr="0"/>
+    <data id="right_arm_x" expr="0"/>
+    <data id="cover_locked" expr="false"/>
+    <data id="system_error" expr="0"/>
+  </datamodel>
+  <parallel id="system" editor:x="12" editor:y="12" editor:width="1625" editor:height="1985" editor:label="system" editor:color="#2e1f30" editor:zIndex="74">
+    <state id="master_ctrl" initial="sys_off" editor:x="30" editor:y="349" editor:width="1267" editor:height="312.02" editor:label="master_ctrl" editor:color="#1e2a3a" editor:zIndex="75">
+      <state id="sys_off" editor:x="719" editor:y="207.02" editor:width="150" editor:height="75" editor:label="sys_off" editor:color="#2a2a3c" editor:zIndex="76">
+        <transition target="sys_initializing" event="C0VI" editor:id="t_01KP3PZCXANS3GK4DZDXMHZQMJ">
+          <log expr="'Pre-initialize instrument'" label="SYSTEM"/>
+        </transition>
+      </state>
+      <state id="sys_initializing" editor:x="1012" editor:y="195.02" editor:width="225" editor:height="75" editor:label="sys_initializing" editor:color="#2a2a3c" editor:zIndex="77">
+        <transition target="sys_ready" event="init.done" editor:waypoints="926,581.02;926,552.02;428,552.02;428,581.02" editor:labelRotation="-90" editor:id="t_01KP3PZCXA2G1Q69XADVF7129Q">
+          <log expr="'Instrument ready'" label="SYSTEM"/>
+        </transition>
+      </state>
+      <state id="sys_ready" editor:x="30" editor:y="195.02" editor:width="175" editor:height="75" editor:label="sys_ready" editor:color="#2a2a3c" editor:zIndex="78">
+        <onentry>
+          <assign expr="true" location="instrument_initialized"/>
+        </onentry>
+        <transition target="sys_ready" event="C0KX" editor:waypoints="109.54545454545455,185.02;125.45454545454545,185.02" editor:id="t_01KP3PZCXAH4S5NMGAVP777327">
+          <assign expr="_event.data.xs || left_arm_x" location="left_arm_x"/>
+          <log expr="'Left arm X=' + (_event.data.xs || left_arm_x)" label="SYSTEM"/>
+        </transition>
+        <transition target="sys_ready" event="C0KR" editor:waypoints="93.63636363636364,155.02;141.36363636363637,155.02" editor:id="t_01KP3PZCXAP598KR4CBYGBM0DV">
+          <assign expr="_event.data.xs || right_arm_x" location="right_arm_x"/>
+        </transition>
+        <transition target="sys_ready" event="C0CO" editor:waypoints="77.72727272727273,125.02000000000001;157.27272727272725,125.02000000000001" editor:id="t_01KP3PZCXAJDDFJ97F2RXW0H3E">
+          <assign expr="true" location="cover_locked"/>
+        </transition>
+        <transition target="sys_ready" event="C0HO" editor:waypoints="61.81818181818182,95.02000000000001;173.1818181818182,95.02000000000001" editor:id="t_01KP3PZCXAEX1273D069RP6WA8">
+          <assign expr="false" location="cover_locked"/>
+        </transition>
+        <transition target="sys_ready" event="C0ST" editor:waypoints="45.90909090909091,65.02000000000001;189.0909090909091,65.02000000000001" editor:id="t_01KP3PZCXA5G40Y4P4FRAC47S0">
+          <log expr="'Status light'" label="SYSTEM"/>
+        </transition>
+        <transition target="sys_error" event="system.error" editor:id="t_01KP3PZCXA0AHJP3SAS0C136HB">
+          <assign expr="_event.data.code || 99" location="system_error"/>
+        </transition>
+      </state>
+      <state id="sys_error" editor:x="401" editor:y="207.02" editor:width="175" editor:height="75" editor:label="sys_error" editor:color="#2a2a3c" editor:zIndex="79">
+        <onentry>
+          <log expr="'System error ' + system_error" label="SYSTEM"/>
+        </onentry>
+        <transition target="sys_off" event="C0VI" editor:id="t_01KP3PZCXA6YVGYZ2MD5RSF30W"/>
+      </state>
+    </state>
+    <state id="pip_region" initial="pip_uninit" editor:x="30" editor:y="1101" editor:width="954" editor:height="307.02" editor:label="pip_region" editor:color="#1e2a3a" editor:zIndex="80">
+      <state id="pip_uninit" editor:x="80" editor:y="202.01999999999998" editor:width="175" editor:height="75" editor:label="pip_uninit" editor:color="#2a2a3c" editor:zIndex="81">
+        <transition target="pip_no_tip" event="C0DI" editor:waypoints="332,1340.02;332,1315.02" editor:id="t_01KP3PZCXAGHCTM624M8849ZJ4"/>
+      </state>
+      <state id="pip_no_tip" editor:x="398" editor:y="152.01999999999998" editor:width="175" editor:height="75" editor:label="pip_no_tip" editor:color="#2a2a3c" editor:zIndex="82">
+        <transition target="pip_tip_empty" event="C0TP" editor:waypoints="640,1284.02;640,1260.02" editor:id="t_01KP3PZCXAV209AJVZP02W435V"/>
+        <transition target="pip_error" event="pip.error" editor:waypoints="756,1321.02;756,1340.02" editor:id="t_01KP3PZCXA4FAYWZG4Q9TDDSJS"/>
+      </state>
+      <state id="pip_tip_empty" editor:x="716" editor:y="102.02" editor:width="200" editor:height="75" editor:label="pip_tip_empty" editor:color="#2a2a3c" editor:zIndex="83">
+        <transition target="pip_tip_loaded" event="C0AS" editor:waypoints="723,1245.02;723,1218.02;425,1218.02;425,1226.02" editor:labelRotation="-90" editor:id="t_01KP3PZCXA5VYQRX8YFVEK9GTN"/>
+        <transition target="pip_no_tip" event="C0TR" editor:waypoints="650,1275.02;650,1303.02" editor:id="t_01KP3PZCXA0SAJ4403DFH4WC3H"/>
+      </state>
+      <state id="pip_tip_loaded" editor:x="30" editor:y="75.02" editor:width="225" editor:height="75" editor:label="pip_tip_loaded" editor:color="#2a2a3c" editor:zIndex="84">
+        <transition target="pip_tip_empty" event="C0DS" editor:waypoints="733,1207.02;733,1230.02" editor:labelRotation="-90" editor:id="t_01KP3PZCXAC7SCPTF0JZEQY4RN"/>
+        <transition target="pip_tip_loaded" event="C0AS" editor:waypoints="105,65.02;180,65.02" editor:id="t_01KP3PZCXAAWG541VFS6MZQ6D6"/>
+        <transition target="pip_no_tip" event="C0TR" editor:waypoints="425,1244.02;425,1290.02" editor:id="t_01KP3PZCXA4PQ9B4Q5BWVQ3F7X"/>
+      </state>
+      <state id="pip_error" editor:x="749" editor:y="202.01999999999998" editor:width="175" editor:height="75" editor:label="pip_error" editor:color="#2a2a3c" editor:zIndex="85">
+        <transition target="pip_uninit" event="C0DI" editor:id="t_01KP3PZCXA50M902168TTMFQJC"/>
+      </state>
+    </state>
+    <state id="head96_region" initial="h96_uninit" editor:x="223" editor:y="48.5" editor:width="996" editor:height="279" editor:label="head96_region" editor:color="#1e2a3a" editor:zIndex="105">
+      <state id="h96_uninit" editor:x="80" editor:y="174" editor:width="175" editor:height="75" editor:label="h96_uninit" editor:color="#2a2a3c" editor:zIndex="106">
+        <transition target="h96_no_tips" event="C0EI" editor:waypoints="525,259.5;525,234.5" editor:id="t_01KP3PZCXAT0M94GAB4H96Y2PJ"/>
+      </state>
+      <state id="h96_no_tips" editor:x="398" editor:y="124" editor:width="200" editor:height="75" editor:label="h96_no_tips" editor:color="#2a2a3c" editor:zIndex="107">
+        <transition target="h96_tips_empty" event="C0EP" editor:waypoints="858,203.5;858,179.5" editor:id="t_01KP3PZCXAP44914975DASEFPQ"/>
+        <transition target="h96_error" event="h96.error" editor:waypoints="974,240.5;974,259.5" editor:id="t_01KP3PZCXAMQ6F37R36K81C0TJ"/>
+      </state>
+      <state id="h96_tips_empty" editor:x="741" editor:y="74" editor:width="225" editor:height="75" editor:label="h96_tips_empty" editor:color="#2a2a3c" editor:zIndex="108">
+        <transition target="h96_tips_loaded" event="C0EA" editor:waypoints="941,164.5;941,137.5;618,137.5;618,145.5" editor:labelRotation="-90" editor:id="t_01KP3PZCXAH8T97QN4EVHAMJG0"/>
+        <transition target="h96_no_tips" event="C0ER" editor:waypoints="868,194.5;868,222.5" editor:id="t_01KP3PZCXAG7T9YTTMCFVA003P"/>
+      </state>
+      <state id="h96_tips_loaded" editor:x="30" editor:y="47" editor:width="225" editor:height="75" editor:label="h96_tips_loaded" editor:color="#2a2a3c" editor:zIndex="109">
+        <transition target="h96_tips_empty" event="C0ED" editor:waypoints="951,126.5;951,149.5" editor:labelRotation="-90" editor:id="t_01KP3PZCXATQ00WE0VRRMEYQ4Q"/>
+        <transition target="h96_no_tips" event="C0ER" editor:waypoints="618,163.5;618,209.5" editor:id="t_01KP3PZCXAA0ERJ94G699XMDQX"/>
+      </state>
+      <state id="h96_error" editor:x="774" editor:y="174" editor:width="175" editor:height="75" editor:label="h96_error" editor:color="#2a2a3c" editor:zIndex="110">
+        <transition target="h96_uninit" event="C0EI" editor:id="t_01KP3PZCXA8KGGRX35H8XCWQWD"/>
+      </state>
+    </state>
+    <state id="iswap_region" initial="isw_uninit" editor:x="30" editor:y="1434" editor:width="1565" editor:height="246" editor:label="iswap_region" editor:color="#1e2a3a" editor:zIndex="86">
+      <state id="isw_uninit" editor:x="1042" editor:y="92" editor:width="175" editor:height="75" editor:label="isw_uninit" editor:color="#2a2a3c" editor:zIndex="87">
+        <transition target="isw_parked" event="C0FI" editor:id="t_01KP3PZCXAMD1NPMEAPV417WRC"/>
+      </state>
+      <state id="isw_parked" editor:x="1360" editor:y="100" editor:width="175" editor:height="75" editor:label="isw_parked" editor:color="#2a2a3c" editor:zIndex="88">
+        <transition target="isw_empty" event="C0FY" editor:waypoints="1367,1591;1367,1629;625,1629;625,1595" editor:id="t_01KP3PZCXAXX2RA9DRR07CYTMJ"/>
+      </state>
+      <state id="isw_empty" editor:x="373" editor:y="111" editor:width="175" editor:height="75" editor:label="isw_empty" editor:color="#2a2a3c" editor:zIndex="89">
+        <transition target="isw_gripped" event="C0PP" editor:waypoints="400,1607;400,1600" editor:id="t_01KP3PZCXAQ45JXWGM23JVMWNK"/>
+        <transition target="isw_parked" event="C0PG" editor:waypoints="615,1613;615,1640;1377,1640;1377,1606" editor:labelRotation="-90" editor:id="t_01KP3PZCXA55MG16WS8MQQ9JQN"/>
+        <transition target="isw_error" event="isw.error" editor:id="t_01KP3PZCXAJNDMKAGX32W2B0AV"/>
+      </state>
+      <state id="isw_gripped" editor:x="30" editor:y="98" editor:width="200" editor:height="75" editor:label="isw_gripped" editor:color="#2a2a3c" editor:zIndex="90">
+        <transition target="isw_empty" event="C0PR" editor:id="t_01KP3PZCXAJGAWX4B42PPQTYMT"/>
+        <transition target="isw_parked" event="C0PG" editor:waypoints="307,1563;307,1512;1274,1512;1274,1561" editor:labelRotation="-90" editor:id="t_01KP3PZCXA8T5P8TQPBDE1W19R"/>
+      </state>
+      <state id="isw_error" editor:x="724" editor:y="92" editor:width="175" editor:height="75" editor:label="isw_error" editor:color="#2a2a3c" editor:zIndex="91">
+        <transition target="isw_uninit" event="C0FI" editor:id="t_01KP3PZCXAG3CNQ1SQFS2DPVTW"/>
+      </state>
+    </state>
+    <state id="autoload_region" initial="al_uninit" editor:x="30" editor:y="1705" editor:width="917" editor:height="250" editor:label="autoload_region" editor:color="#1e2a3a" editor:zIndex="92">
+      <state id="al_uninit" editor:x="30" editor:y="65" editor:width="175" editor:height="75" editor:label="al_uninit" editor:color="#2a2a3c" editor:zIndex="93">
+        <transition target="al_idle" event="C0II" editor:id="t_01KP3PZCXA8678CZGTQBSVHDQD"/>
+      </state>
+      <state id="al_idle" editor:x="348" editor:y="65" editor:width="150" editor:height="75" editor:label="al_idle" editor:color="#2a2a3c" editor:zIndex="94">
+        <transition target="al_loading" event="C0CL" editor:waypoints="555,1842;555,1912" editor:id="t_01KP3PZCXAVNVTQMDYZKVRA70E"/>
+        <transition target="al_unloading" event="C0CR" editor:id="t_01KP3PZCXASE48VZ8XEJ7X6FVF"/>
+      </state>
+      <state id="al_loading" editor:x="664" editor:y="145" editor:width="175" editor:height="75" editor:label="al_loading" editor:color="#2a2a3c" editor:zIndex="95">
+        <transition target="al_idle" event="load.done" editor:waypoints="565,1887;565,1827" editor:id="t_01KP3PZCXA8T0ZG61J55N93VC0"/>
+      </state>
+      <state id="al_unloading" editor:x="687" editor:y="45" editor:width="200" editor:height="75" editor:label="al_unloading" editor:color="#2a2a3c" editor:zIndex="96">
+        <transition target="al_idle" event="unload.done" editor:waypoints="555,1787;555,1797" editor:id="t_01KP3PZCXA7GT1YFJQJVG3KWWE"/>
+      </state>
+    </state>
+    <state id="wash_region" initial="ws_uninit" editor:x="30" editor:y="687" editor:width="899" editor:height="167" editor:label="wash_region" editor:color="#1e2a3a" editor:zIndex="97">
+      <state id="ws_uninit" editor:x="30" editor:y="45" editor:width="175" editor:height="75" editor:label="ws_uninit" editor:color="#2a2a3c" editor:zIndex="98">
+        <transition target="ws_idle" event="C0WI" editor:id="t_01KP3PZCXAEV3YJGFYNSAB0Z49"/>
+      </state>
+      <state id="ws_idle" editor:x="348" editor:y="45" editor:width="150" editor:height="75" editor:label="ws_idle" editor:color="#2a2a3c" editor:zIndex="99">
+        <transition target="ws_washing" event="C0WS" editor:waypoints="575,800;575,814;648,814;648,800" editor:id="t_01KP3PZCXA0WYCZ05X2107V51J"/>
+        <transition target="ws_washing" event="C0WC" editor:id="t_01KP3PZCXA6YJQWRHHCA6PWTEE"/>
+      </state>
+      <state id="ws_washing" editor:x="694" editor:y="45" editor:width="175" editor:height="75" editor:label="ws_washing" editor:color="#2a2a3c" editor:zIndex="100">
+        <transition target="ws_idle" event="wash_ws.done" editor:waypoints="701,763;701,750;575,750;575,763" editor:id="t_01KP3PZCXAP6M21G1JXW4M3DKH"/>
+      </state>
+    </state>
+    <state id="temp_region" initial="t_off" editor:x="30" editor:y="879" editor:width="846" editor:height="197" editor:label="temp_region" editor:color="#1e2a3a" editor:zIndex="101">
+      <state id="t_off" editor:x="348" editor:y="92" editor:width="150" editor:height="75" editor:label="t_off" editor:color="#2a2a3c" editor:zIndex="102">
+        <transition target="t_heating" event="C0HI" editor:waypoints="375,1033;375,1026" editor:id="t_01KP3PZCXABB2TQAKSXBXV6WJJ"/>
+        <transition target="t_at_temp" event="C0HC" editor:waypoints="555,1033;555,1026" editor:id="t_01KP3PZCXA5MJRG01Q81CHS1QB"/>
+      </state>
+      <state id="t_heating" editor:x="30" editor:y="79" editor:width="175" editor:height="75" editor:label="t_heating" editor:color="#2a2a3c" editor:zIndex="103">
+        <transition target="t_at_temp" event="temp.reached" editor:waypoints="282,989;282,957;648,957;648,989" editor:labelRotation="-90" editor:id="t_01KP3PZCXA35AYXEHQTGCGN1CV"/>
+        <transition target="t_off" event="C0HF" editor:id="t_01KP3PZCXAQMJJAKE2MQ7N6J8D"/>
+      </state>
+      <state id="t_at_temp" editor:x="641" editor:y="79" editor:width="175" editor:height="75" editor:label="t_at_temp" editor:color="#2a2a3c" editor:zIndex="104">
+        <transition target="t_off" event="C0HF" editor:id="t_01KP3PZCXAG0YGC0AB12BD26FJ"/>
+      </state>
+    </state>
+  </parallel>
+
+  <ext:traces xmlns:ext="http://vscxml.com/extensions"><ext:trace description="Complete method: init all -&gt; load carrier -&gt; heat -&gt; PIP aspirate/dispense -&gt; 96Head aspirate/dispense -&gt; iSWAP transport -&gt; wash -&gt; temp off" name="full_method_run" recorded="2026-04-13T15:23:06.623237300Z">{"timestamp":370579163259,"type":"session_start","scxml_name":"HamiltonSTAR_System","datamodel":"ecmascript"}
+{"timestamp":370579169960,"type":"state_enter","state_id":"system"}
+{"timestamp":370579170672,"type":"state_enter","state_id":"master_ctrl"}
+{"timestamp":370579170801,"type":"state_enter","state_id":"sys_off"}
+{"timestamp":370579170903,"type":"state_enter","state_id":"pip_region"}
+{"timestamp":370579170995,"type":"state_enter","state_id":"pip_uninit"}
+{"timestamp":370579171079,"type":"state_enter","state_id":"head96_region"}
+{"timestamp":370579171166,"type":"state_enter","state_id":"h96_uninit"}
+{"timestamp":370579171262,"type":"state_enter","state_id":"iswap_region"}
+{"timestamp":370579171371,"type":"state_enter","state_id":"isw_uninit"}
+{"timestamp":370579171496,"type":"state_enter","state_id":"autoload_region"}
+{"timestamp":370579171617,"type":"state_enter","state_id":"al_uninit"}
+{"timestamp":370579171756,"type":"state_enter","state_id":"wash_region"}
+{"timestamp":370579171914,"type":"state_enter","state_id":"ws_uninit"}
+{"timestamp":370579172091,"type":"state_enter","state_id":"temp_region"}
+{"timestamp":370579172437,"type":"state_enter","state_id":"t_off"}
+{"timestamp":370579225562,"type":"event_received","event_name":"C0VI","event_type":"external"}
+{"timestamp":370579225867,"type":"transition","from":"sys_off","to":"sys_initializing","event":"C0VI"}
+{"timestamp":370579226339,"type":"state_exit","state_id":"sys_off"}
+{"timestamp":370579226966,"type":"log","label":"SYSTEM","message":"Pre-initialize instrument"}
+{"timestamp":370579227037,"type":"state_enter","state_id":"sys_initializing"}
+{"timestamp":370579278376,"type":"event_received","event_name":"init.done","event_type":"external"}
+{"timestamp":370579278532,"type":"transition","from":"sys_initializing","to":"sys_ready","event":"init.done"}
+{"timestamp":370579278789,"type":"state_exit","state_id":"sys_initializing"}
+{"timestamp":370579279547,"type":"log","label":"SYSTEM","message":"Instrument ready"}
+{"timestamp":370579279989,"type":"state_enter","state_id":"sys_ready"}
+{"timestamp":370579331580,"type":"event_received","event_name":"C0DI","event_type":"external"}
+{"timestamp":370579331865,"type":"transition","from":"pip_uninit","to":"pip_no_tip","event":"C0DI"}
+{"timestamp":370579332141,"type":"state_exit","state_id":"pip_uninit"}
+{"timestamp":370579332313,"type":"state_enter","state_id":"pip_no_tip"}
+{"timestamp":370579385954,"type":"event_received","event_name":"C0EI","event_type":"external"}
+{"timestamp":370579386152,"type":"transition","from":"h96_uninit","to":"h96_no_tips","event":"C0EI"}
+{"timestamp":370579386435,"type":"state_exit","state_id":"h96_uninit"}
+{"timestamp":370579386689,"type":"state_enter","state_id":"h96_no_tips"}
+{"timestamp":370579439614,"type":"event_received","event_name":"C0FI","event_type":"external"}
+{"timestamp":370579439846,"type":"transition","from":"isw_uninit","to":"isw_parked","event":"C0FI"}
+{"timestamp":370579440140,"type":"state_exit","state_id":"isw_uninit"}
+{"timestamp":370579440325,"type":"state_enter","state_id":"isw_parked"}
+{"timestamp":370579501624,"type":"event_received","event_name":"C0II","event_type":"external"}
+{"timestamp":370579501886,"type":"transition","from":"al_uninit","to":"al_idle","event":"C0II"}
+{"timestamp":370579502161,"type":"state_exit","state_id":"al_uninit"}
+{"timestamp":370579502371,"type":"state_enter","state_id":"al_idle"}
+{"timestamp":370579565279,"type":"event_received","event_name":"C0WI","event_type":"external"}
+{"timestamp":370579565488,"type":"transition","from":"ws_uninit","to":"ws_idle","event":"C0WI"}
+{"timestamp":370579565738,"type":"state_exit","state_id":"ws_uninit"}
+{"timestamp":370579565966,"type":"state_enter","state_id":"ws_idle"}
+{"timestamp":370579617917,"type":"event_received","event_name":"C0HC","event_type":"external","event_data":{"hc":370,"hn":1}}
+{"timestamp":370579618133,"type":"transition","from":"t_off","to":"t_at_temp","event":"C0HC"}
+{"timestamp":370579618371,"type":"state_exit","state_id":"t_off"}
+{"timestamp":370579618544,"type":"state_enter","state_id":"t_at_temp"}
+{"timestamp":370579670042,"type":"event_received","event_name":"C0CL","event_type":"external"}
+{"timestamp":370579670206,"type":"transition","from":"al_idle","to":"al_loading","event":"C0CL"}
+{"timestamp":370579670468,"type":"state_exit","state_id":"al_idle"}
+{"timestamp":370579670671,"type":"state_enter","state_id":"al_loading"}
+{"timestamp":370579721819,"type":"event_received","event_name":"load.done","event_type":"external"}
+{"timestamp":370579721998,"type":"transition","from":"al_loading","to":"al_idle","event":"load.done"}
+{"timestamp":370579722323,"type":"state_exit","state_id":"al_loading"}
+{"timestamp":370579722498,"type":"state_enter","state_id":"al_idle"}
+{"timestamp":370579773718,"type":"event_received","event_name":"C0FY","event_type":"external"}
+{"timestamp":370579773851,"type":"transition","from":"isw_parked","to":"isw_empty","event":"C0FY"}
+{"timestamp":370579773983,"type":"state_exit","state_id":"isw_parked"}
+{"timestamp":370579774225,"type":"state_enter","state_id":"isw_empty"}
+{"timestamp":370579827941,"type":"event_received","event_name":"C0TP","event_type":"external","event_data":{"tm":255,"tt":4}}
+{"timestamp":370579828116,"type":"transition","from":"pip_no_tip","to":"pip_tip_empty","event":"C0TP"}
+{"timestamp":370579828294,"type":"state_exit","state_id":"pip_no_tip"}
+{"timestamp":370579828422,"type":"state_enter","state_id":"pip_tip_empty"}
+{"timestamp":370579881597,"type":"event_received","event_name":"C0AS","event_type":"external","event_data":{"av":1000}}
+{"timestamp":370579881815,"type":"transition","from":"pip_tip_empty","to":"pip_tip_loaded","event":"C0AS"}
+{"timestamp":370579882036,"type":"state_exit","state_id":"pip_tip_empty"}
+{"timestamp":370579882175,"type":"state_enter","state_id":"pip_tip_loaded"}
+{"timestamp":370579934108,"type":"event_received","event_name":"C0DS","event_type":"external","event_data":{"dv":1000,"dm":0}}
+{"timestamp":370579934285,"type":"transition","from":"pip_tip_loaded","to":"pip_tip_empty","event":"C0DS"}
+{"timestamp":370579934449,"type":"state_exit","state_id":"pip_tip_loaded"}
+{"timestamp":370579934551,"type":"state_enter","state_id":"pip_tip_empty"}
+{"timestamp":370579987678,"type":"event_received","event_name":"C0TR","event_type":"external"}
+{"timestamp":370579987861,"type":"transition","from":"pip_tip_empty","to":"pip_no_tip","event":"C0TR"}
+{"timestamp":370579988008,"type":"state_exit","state_id":"pip_tip_empty"}
+{"timestamp":370579988108,"type":"state_enter","state_id":"pip_no_tip"}
+{"timestamp":370580040136,"type":"event_received","event_name":"C0EP","event_type":"external","event_data":{"tt":4}}
+{"timestamp":370580040318,"type":"transition","from":"h96_no_tips","to":"h96_tips_empty","event":"C0EP"}
+{"timestamp":370580040456,"type":"state_exit","state_id":"h96_no_tips"}
+{"timestamp":370580040552,"type":"state_enter","state_id":"h96_tips_empty"}
+{"timestamp":370580092619,"type":"event_received","event_name":"C0EA","event_type":"external","event_data":{"af":500}}
+{"timestamp":370580092798,"type":"transition","from":"h96_tips_empty","to":"h96_tips_loaded","event":"C0EA"}
+{"timestamp":370580093035,"type":"state_exit","state_id":"h96_tips_empty"}
+{"timestamp":370580093232,"type":"state_enter","state_id":"h96_tips_loaded"}
+{"timestamp":370580144642,"type":"event_received","event_name":"C0ED","event_type":"external","event_data":{"df":500,"da":0}}
+{"timestamp":370580144820,"type":"transition","from":"h96_tips_loaded","to":"h96_tips_empty","event":"C0ED"}
+{"timestamp":370580145161,"type":"state_exit","state_id":"h96_tips_loaded"}
+{"timestamp":370580145360,"type":"state_enter","state_id":"h96_tips_empty"}
+{"timestamp":370580197619,"type":"event_received","event_name":"C0ER","event_type":"external"}
+{"timestamp":370580197735,"type":"transition","from":"h96_tips_empty","to":"h96_no_tips","event":"C0ER"}
+{"timestamp":370580197884,"type":"state_exit","state_id":"h96_tips_empty"}
+{"timestamp":370580197986,"type":"state_enter","state_id":"h96_no_tips"}
+{"timestamp":370580249080,"type":"event_received","event_name":"C0PP","event_type":"external"}
+{"timestamp":370580249228,"type":"transition","from":"isw_empty","to":"isw_gripped","event":"C0PP"}
+{"timestamp":370580249465,"type":"state_exit","state_id":"isw_empty"}
+{"timestamp":370580249713,"type":"state_enter","state_id":"isw_gripped"}
+{"timestamp":370580301186,"type":"event_received","event_name":"C0PR","event_type":"external"}
+{"timestamp":370580301374,"type":"transition","from":"isw_gripped","to":"isw_empty","event":"C0PR"}
+{"timestamp":370580301635,"type":"state_exit","state_id":"isw_gripped"}
+{"timestamp":370580301808,"type":"state_enter","state_id":"isw_empty"}
+{"timestamp":370580354794,"type":"event_received","event_name":"C0WS","event_type":"external"}
+{"timestamp":370580354982,"type":"transition","from":"ws_idle","to":"ws_washing","event":"C0WS"}
+{"timestamp":370580355293,"type":"state_exit","state_id":"ws_idle"}
+{"timestamp":370580355578,"type":"state_enter","state_id":"ws_washing"}
+{"timestamp":370580407865,"type":"event_received","event_name":"wash_ws.done","event_type":"external"}
+{"timestamp":370580408057,"type":"transition","from":"ws_washing","to":"ws_idle","event":"wash_ws.done"}
+{"timestamp":370580408286,"type":"state_exit","state_id":"ws_washing"}
+{"timestamp":370580408409,"type":"state_enter","state_id":"ws_idle"}
+{"timestamp":370580461285,"type":"event_received","event_name":"C0HF","event_type":"external"}
+{"timestamp":370580461482,"type":"transition","from":"t_at_temp","to":"t_off","event":"C0HF"}
+{"timestamp":370580461705,"type":"state_exit","state_id":"t_at_temp"}
+{"timestamp":370580461885,"type":"state_enter","state_id":"t_off"}</ext:trace></ext:traces>
+</scxml>

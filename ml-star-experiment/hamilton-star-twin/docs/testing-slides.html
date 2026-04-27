@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hamilton STAR Digital Twin — Testing & VENUS-trace verification</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" id="hljs-theme" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Dark palette (default). Same accent system as architecture-slides.html
+     * so the two decks read as a pair. */
+    :root, [data-theme="dark"] {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --bg-panel: #1c2128;
+      --fg: #e6edf3;
+      --fg-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-2: #7ee787;
+      --accent-3: #f5be3c;
+      --accent-4: #ff7b72;
+      --border: #30363d;
+      --code-bg: #0d1117;
+      --radial-1: rgba(88, 166, 255, 0.08);
+      --radial-2: rgba(245, 190, 60, 0.05);
+      --callout-bg-a: rgba(88, 166, 255, 0.12);
+      --callout-bg-b: rgba(88, 166, 255, 0.02);
+      --warning-bg-a: rgba(245, 190, 60, 0.12);
+      --warning-bg-b: rgba(245, 190, 60, 0.02);
+      --insight-bg-a: rgba(126, 231, 135, 0.1);
+      --insight-bg-b: rgba(126, 231, 135, 0.02);
+      --card-bg: rgba(22, 27, 34, 0.6);
+    }
+    [data-theme="light"] {
+      --bg: #fbfcfd;
+      --bg-soft: #f1f3f5;
+      --bg-panel: #ffffff;
+      --fg: #1c2128;
+      --fg-muted: #57606a;
+      --accent: #0969da;
+      --accent-2: #1a7f37;
+      --accent-3: #bf8700;
+      --accent-4: #cf222e;
+      --border: #d0d7de;
+      --code-bg: #f6f8fa;
+      --radial-1: rgba(9, 105, 218, 0.06);
+      --radial-2: rgba(191, 135, 0, 0.04);
+      --callout-bg-a: rgba(9, 105, 218, 0.1);
+      --callout-bg-b: rgba(9, 105, 218, 0.02);
+      --warning-bg-a: rgba(191, 135, 0, 0.12);
+      --warning-bg-b: rgba(191, 135, 0, 0.02);
+      --insight-bg-a: rgba(26, 127, 55, 0.1);
+      --insight-bg-b: rgba(26, 127, 55, 0.02);
+      --card-bg: rgba(246, 248, 250, 0.7);
+    }
+
+    html, body { background: var(--bg); }
+    [data-theme="light"] .hljs { background: var(--code-bg) !important; color: var(--fg) !important; }
+
+    .reveal {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      font-weight: 400;
+      color: var(--fg);
+      background:
+        radial-gradient(ellipse at 20% -10%, var(--radial-1), transparent 50%),
+        radial-gradient(ellipse at 80% 110%, var(--radial-2), transparent 50%),
+        var(--bg);
+    }
+
+    .reveal .slides > section,
+    .reveal .slides > section > section {
+      box-sizing: border-box;
+      overflow: visible;
+      padding-bottom: 28px;
+    }
+    .reveal .slides > section.title-slide,
+    .reveal .slides > section.section-divider { padding-bottom: 0; }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+      text-transform: none;
+      text-shadow: none;
+      margin-top: 0;
+    }
+    .reveal h1 { font-size: 1.95em; line-height: 1.12; margin-bottom: 0.35em; }
+    .reveal h2 { font-size: 1.35em; line-height: 1.2; margin-bottom: 0.4em; }
+    .reveal h3 { font-size: 1.05em; color: var(--accent); font-weight: 500; margin-bottom: 0.3em; }
+    .reveal h4 { font-size: 0.9em; color: var(--fg-muted); font-weight: 500; }
+
+    .reveal p, .reveal li { line-height: 1.45; }
+    .reveal ul, .reveal ol { display: block; }
+    .reveal li { margin: 0.25em 0; }
+
+    .reveal code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-panel);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--accent-2);
+      border: 1px solid var(--border);
+    }
+
+    .reveal pre {
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--code-bg);
+      font-size: 0.5em;
+    }
+
+    .reveal pre code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      padding: 20px 24px;
+      max-height: 560px;
+      border: none;
+      background: transparent;
+      color: var(--fg);
+      font-size: 1em;
+      line-height: 1.5;
+      border-radius: 8px;
+    }
+
+    .reveal a { color: var(--accent); }
+
+    .reveal table {
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0.5em auto;
+      font-size: 0.7em;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .reveal table th, .reveal table td {
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 0.4em 0.8em;
+      text-align: left;
+    }
+    .reveal table th:last-child, .reveal table td:last-child { border-right: none; }
+    .reveal table tr:last-child td { border-bottom: none; }
+    .reveal table th {
+      background: var(--bg-panel);
+      color: var(--accent);
+      font-weight: 500;
+      font-size: 0.95em;
+      letter-spacing: 0.01em;
+    }
+    .reveal table td code { font-size: 0.85em; }
+
+    .reveal section img {
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      max-height: 500px;
+    }
+
+    .mermaid-slide {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .mermaid {
+      background: transparent !important;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0.2em auto;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      max-height: 600px !important;
+      height: auto !important;
+      filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.35));
+    }
+    .mermaid svg text,
+    .mermaid svg .nodeLabel,
+    .mermaid svg .edgeLabel,
+    .mermaid svg .label,
+    .mermaid svg foreignObject div,
+    .mermaid svg foreignObject span {
+      fill: var(--fg) !important;
+      color: var(--fg) !important;
+    }
+    .mermaid svg .messageText { fill: var(--fg) !important; }
+    .mermaid svg .noteText    { fill: var(--fg) !important; }
+    .mermaid svg .loopText, .mermaid svg .loopText tspan { fill: var(--accent) !important; }
+    .mermaid svg .labelBkg    { fill: var(--bg-soft) !important; opacity: 0.9 !important; }
+    .mermaid svg rect.actor   { fill: var(--bg-panel) !important; stroke: var(--accent) !important; }
+    .mermaid svg .activation0, .mermaid svg .activation1, .mermaid svg .activation2 {
+      fill: var(--bg-panel) !important; stroke: var(--accent) !important;
+    }
+
+    .title-slide {
+      text-align: left;
+      padding: 1em 2em;
+    }
+    .title-slide .eyebrow {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.65em;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.4em;
+    }
+    .title-slide h1 {
+      font-size: 2.6em;
+      line-height: 1.05;
+      margin-bottom: 0.45em;
+      background: linear-gradient(135deg, var(--fg) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-slide .sub {
+      font-size: 0.95em;
+      color: var(--fg-muted);
+      font-weight: 300;
+      max-width: 30ch;
+      line-height: 1.45;
+    }
+    .title-slide .meta {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      color: var(--fg-muted);
+      margin-top: 1.6em;
+      letter-spacing: 0.05em;
+    }
+    .title-slide .meta span { color: var(--accent-3); }
+
+    .big-nums {
+      display: flex;
+      gap: 2em;
+      justify-content: center;
+      margin: 1em 0;
+      flex-wrap: wrap;
+    }
+    .big-nums .num {
+      text-align: center;
+      padding: 0.6em 1em;
+    }
+    .big-nums .num .n {
+      font-size: 2.8em;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.15em;
+    }
+    .big-nums .num .l {
+      font-size: 0.6em;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .section-divider {
+      text-align: center;
+    }
+    .section-divider .tag {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7em;
+      letter-spacing: 0.25em;
+      margin-bottom: 1em;
+    }
+    .section-divider h1 {
+      font-size: 3.6em;
+      background: linear-gradient(135deg, var(--fg), var(--accent) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+
+    .principle {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 0.9em;
+      align-items: start;
+      text-align: left;
+      padding: 0.35em 0;
+    }
+    .principle .n {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 2.2em;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 0.9;
+    }
+    .principle h2 { margin-top: 0.05em; margin-bottom: 0.2em; font-size: 1.1em; }
+    .principle p { color: var(--fg-muted); margin: 0; font-size: 0.75em; line-height: 1.45; }
+
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.6em;
+      text-align: left;
+    }
+    .cols.three { grid-template-columns: 1fr 1fr 1fr; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75em 0.95em;
+    }
+    .card h3 { margin-top: 0; margin-bottom: 0.3em; font-size: 0.85em; }
+    .card p, .card ul { font-size: 0.7em; color: var(--fg-muted); margin: 0; }
+    .card ul { padding-left: 1.1em; }
+
+    .callout {
+      background: linear-gradient(135deg, var(--callout-bg-a), var(--callout-bg-b));
+      border-left: 3px solid var(--accent);
+      padding: 0.75em 1.2em;
+      border-radius: 6px;
+      font-size: 0.75em;
+      line-height: 1.5;
+      color: var(--fg);
+      text-align: left;
+      margin: 0.5em 0;
+    }
+    .callout.warning {
+      background: linear-gradient(135deg, var(--warning-bg-a), var(--warning-bg-b));
+      border-left-color: var(--accent-3);
+    }
+    .callout.insight {
+      background: linear-gradient(135deg, var(--insight-bg-a), var(--insight-bg-b));
+      border-left-color: var(--accent-2);
+    }
+    .callout .label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75em;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5em;
+    }
+    .callout.warning .label { color: var(--accent-3); }
+    .callout.insight .label { color: var(--accent-2); }
+
+    .caption {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      color: var(--fg-muted);
+      letter-spacing: 0.05em;
+      margin-top: 0.8em;
+      text-align: center;
+    }
+
+    .reveal ul.accent li {
+      list-style: none;
+      position: relative;
+      padding-left: 1.3em;
+    }
+    .reveal ul.accent li::before {
+      content: "▸";
+      color: var(--accent);
+      position: absolute;
+      left: 0;
+    }
+
+    .reveal .slide-number {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--fg-muted);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      font-size: 0.7em;
+      left: 18px;
+      right: auto;
+      bottom: 14px;
+      top: auto;
+      padding: 3px 10px;
+      border-radius: 999px;
+      z-index: 40;
+    }
+
+    .reveal .progress {
+      color: var(--accent);
+      height: 3px;
+    }
+
+    .reveal .controls {
+      color: var(--accent);
+      bottom: 20px;
+      right: 20px;
+    }
+    .reveal .controls button::before,
+    .reveal .controls button::after { color: var(--accent); }
+
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 60;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--fg-muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: color 120ms, border-color 120ms, background 120ms;
+    }
+    .theme-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Trace-line annotation — used on the ".trc anatomy" slide. Columns
+     * aligned with JetBrains Mono so the vertical guide lines track the
+     * payload characters even when the viewport scales. */
+    .trace-anatomy {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.6em;
+      text-align: left;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9em 1em;
+      line-height: 1.5;
+    }
+    .trace-anatomy .tx  { color: var(--accent);   }
+    .trace-anatomy .rx  { color: var(--accent-2); }
+    .trace-anatomy .note { color: var(--fg-muted); margin-top: 0.8em; font-size: 0.85em; }
+
+    /* Layer stack used on the "three surfaces" slide — one column, three
+     * stacked bands, each a different accent for an at-a-glance read. */
+    .layer-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6em;
+      margin-top: 0.4em;
+    }
+    .layer {
+      display: grid;
+      grid-template-columns: 1.2fr 2fr 1.1fr;
+      gap: 0.9em;
+      align-items: center;
+      padding: 0.7em 0.9em;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: var(--card-bg);
+      text-align: left;
+    }
+    .layer .title {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.9em;
+    }
+    .layer .desc  { color: var(--fg-muted); font-size: 0.7em; line-height: 1.45; }
+    .layer .meta  { font-family: "JetBrains Mono", monospace; font-size: 0.6em; color: var(--fg-muted); text-align: right; }
+    .layer .meta b { color: var(--fg); }
+    .layer.l2 { border-left-color: var(--accent-2); }
+    .layer.l2 .title { color: var(--accent-2); }
+    .layer.l3 { border-left-color: var(--accent-3); }
+    .layer.l3 .title { color: var(--accent-3); }
+
+    /* Failure-injection side-by-side — left "what would break" claim,
+     * right "test that catches it" snippet. */
+    .injection-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1em;
+      margin-top: 0.4em;
+      text-align: left;
+    }
+    .injection-grid .panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7em 0.9em;
+      background: var(--card-bg);
+    }
+    .injection-grid .panel h4 {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      letter-spacing: 0.2em;
+      color: var(--accent-3);
+      margin: 0 0 0.5em 0;
+    }
+    .injection-grid .panel.test h4 { color: var(--accent-2); }
+    .injection-grid .panel p {
+      font-size: 0.7em;
+      color: var(--fg-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .injection-grid .panel code { font-size: 0.8em; }
+
+    /* Thin horizontal rail used between principles — echoes the
+     * architecture deck's divider style without forcing a second slide. */
+    .rail {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0.8em 0;
+    }
+
+    .small { font-size: 0.7em !important; }
+    .tiny  { font-size: 0.55em !important; }
+    .muted { color: var(--fg-muted); }
+    .accent   { color: var(--accent); }
+    .accent-2 { color: var(--accent-2); }
+    .accent-3 { color: var(--accent-3); }
+    .accent-4 { color: var(--accent-4); }
+    .mono   { font-family: "JetBrains Mono", monospace; }
+    .center { text-align: center; }
+    .left   { text-align: left; }
+  </style>
+</head>
+<body data-theme="dark">
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle light / dark (T)">Light</button>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================
+     TITLE
+============================================================ -->
+<section class="title-slide">
+  <div class="eyebrow">Testing · 2026-04-20</div>
+  <h1>Hamilton STAR<br/>Digital Twin — Tests</h1>
+  <div class="sub">
+    How we verify firmware fidelity: three layers of tests anchored on
+    real VENUS recordings, driven through the same TCP wire format a
+    real instrument uses.
+  </div>
+  <div class="meta">
+    <span>437</span> tests &nbsp;·&nbsp;
+    <span>58</span> VENUS .trc files &nbsp;·&nbsp;
+    <span>30</span> init-pair shape matches &nbsp;·&nbsp;
+    <span>4</span> CI jobs
+  </div>
+</section>
+
+<!-- ============================================================
+     THE BIG IDEA — THREE LAYERS
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">THE BIG IDEA</div>
+  <h1>Three layers.</h1>
+</section>
+
+<section>
+  <div class="principle">
+    <div class="n">01</div>
+    <div>
+      <h2>SCXML + physics unit tests.</h2>
+      <p>Per-command fidelity against VENUS source line numbers. <code>C0AS</code>, <code>C0DS</code>, <code>C0TP</code>, <code>C0TR</code>, motion envelope, iSWAP plate dims, tip-mask isolation. Cheap, fast, every PR.</p>
+    </div>
+  </div>
+  <div class="principle">
+    <div class="n">02</div>
+    <div>
+      <h2>Bridge integration tests.</h2>
+      <p>Same TCP path VENUS uses — plain BDZ line-delimited. Asserts end-state deltas (well volumes, tip counts, motion envelopes). CI-gated.</p>
+    </div>
+  </div>
+  <div class="principle">
+    <div class="n">03</div>
+    <div>
+      <h2>VENUS ComTrace replay.</h2>
+      <p>Byte-level regression against <code>.trc</code> recordings. Shape-matches each <code>id####</code> response's prefix + error shape + named-field set. Local only (corpus lives next to the working copy, not in git).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     WHY A TWIN MAKES TESTING EASIER
+============================================================ -->
+<section>
+  <h2>Why the protocol-level twin is easier to test</h2>
+  <table>
+    <thead>
+      <tr><th>If the twin were…</th><th>Testable against</th><th>Problem</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>A protocol-step simulator</b></td>
+        <td>Step-library assertions</td>
+        <td>Can't replay VENUS ComTraces; can't detect FW rejections; can't regression-test the TCP wire format.</td>
+      </tr>
+      <tr>
+        <td><b>A C/C++ FW emulator</b></td>
+        <td>Its own binary</td>
+        <td>Every test needs a running process; no in-memory harness; no failure-injection without rebuilds.</td>
+      </tr>
+      <tr>
+        <td><b>A hand-written mock</b></td>
+        <td>Assertions on the mock</td>
+        <td>Drifts from the real instrument silently; tests pass; real VENUS rejects on first run.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout insight" style="margin-top: 0.8em;">
+    <div class="label">THE LEVERAGE</div>
+    Because <b>firmware is the contract</b>, the same <code>sendCommand</code> path that powers
+    real VENUS powers every test — unit, integration, and recorded-trace replay all
+    execute the SCXML state machines the same way.
+  </div>
+</section>
+
+<!-- ============================================================
+     LAYERED DIAGRAM
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">THE TOPOLOGY</div>
+  <h1>Real traces in. Deltas out.</h1>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">Test topology</h3>
+  <div class="mermaid">
+flowchart TB
+    subgraph corpus["VENUS CORPUS (not in git)"]
+        trc[".trc files × 58 — TipPickup, CORE96, LoadCarrier, …"]
+    end
+
+    subgraph harnesses["HARNESSES"]
+        direction LR
+        unit["createTestTwin — sync, in-process"]
+        bridge["startFwServer — BDZ TCP"]
+        runner["runVenusMethod — method-level"]
+    end
+
+    subgraph tests["TESTS"]
+        direction LR
+        u["Unit (dist/)"]
+        i["Integration (bridge)"]
+        r["Trace replay (shape)"]
+    end
+
+    api["DigitalTwinAPI · sendCommand · sendCommandDeferred"]
+
+    subgraph core["CORE TWIN"]
+        direction TB
+        scxml["SCXML × 10 modules"]
+        dm[("Shared datamodel")]
+        plugins["Physics plugins"]
+    end
+
+    ci["GitHub Actions · 4 jobs"]
+
+    trc --> r
+    u --> unit
+    i --> bridge
+    r --> bridge
+    runner -.-> unit
+    runner -.-> bridge
+
+    unit --> api
+    bridge --> api
+    api --> scxml --> dm
+    api --> plugins --> dm
+
+    u -->|PR gate| ci
+    i -->|PR gate| ci
+    r -.->|local only| ci
+
+    classDef highlight stroke-width:3px
+    class api,dm,trc highlight
+  </div>
+  <div class="caption">One path through the twin. Three ways to prove it's right.</div>
+</section>
+
+<!-- ============================================================
+     THE THREE SURFACES — AT A GLANCE
+============================================================ -->
+<section>
+  <h2>Three surfaces, increasing fidelity</h2>
+  <div class="layer-stack">
+    <div class="layer">
+      <div>
+        <div class="title">1 · Unit</div>
+        <div class="desc tiny mono">tests/unit/**</div>
+      </div>
+      <div class="desc">
+        SCXML mutations + physics validation + motion envelope. Sync twin
+        loaded from <code>dist/</code> (CJS). Every new command gets a
+        failure-injection preamble.
+      </div>
+      <div class="meta">
+        <b>434</b> tests<br/>
+        ~<b>7 s</b> suite · PR gate
+      </div>
+    </div>
+    <div class="layer l2">
+      <div>
+        <div class="title">2 · Integration</div>
+        <div class="desc tiny mono">tests/integration/**</div>
+      </div>
+      <div class="desc">
+        Boots the real BDZ bridge on an ephemeral port; plain
+        line-delimited TCP client. Verifies well-volume / tip / state
+        deltas end-to-end.
+      </div>
+      <div class="meta">
+        <b>13</b> CI-gated<br/>
+        others excluded
+      </div>
+    </div>
+    <div class="layer l3">
+      <div>
+        <div class="title">3 · .trc replay</div>
+        <div class="desc tiny mono">fw-trace-replay.test.ts</div>
+      </div>
+      <div class="desc">
+        Parses a real VENUS recording into request/response pairs.
+        Shape-matches each response's structure against the twin's actual
+        reply. Tolerant on hardware-specific values.
+      </div>
+      <div class="meta">
+        <b>30</b> init pairs<br/>
+        local (no corpus on CI)
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 01 — VENUS traces as base of truth
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 01</div>
+  <h1>VENUS .trc files are the contract</h1>
+</section>
+
+<section>
+  <h2>What a ComTrace line looks like</h2>
+  <div class="trace-anatomy">
+<span class="tx">&lt; 14:23:07.128</span> <span class="muted">&lt;-- 127.0.0.1 :34567:</span> C0ASid0004xp02755yp05300av01000tm01lm0<br/>
+<span class="rx">&gt; 14:23:07.842</span> <span class="muted">--&gt; 127.0.0.1 :34567:</span> C0ASid0004er00<br/>
+<br/>
+<span class="tx">&lt; 14:23:08.310</span> <span class="muted">&lt;-- 127.0.0.1 :34567:</span> C0DSid0005xp02755yp05300dv01000dm2<br/>
+<span class="rx">&gt; 14:23:09.022</span> <span class="muted">--&gt; 127.0.0.1 :34567:</span> C0DSid0005er00
+<div class="note">
+<span class="tx">&lt;</span> = host → instrument (TX) &nbsp;·&nbsp;
+<span class="rx">&gt;</span> = instrument → host (RX) &nbsp;·&nbsp;
+plain ASCII, <code>\r\n</code>-terminated, no FDx framing.
+</div>
+  </div>
+  <div class="callout" style="margin-top: 0.8em;">
+    <div class="label">WHY THE TWIN CAN REPLAY THESE DIRECTLY</div>
+    The twin's BDZ bridge speaks the identical line-delimited transport.
+    A trace's TX line can be written straight to the bridge socket, and
+    the RX line is what the twin must produce.
+  </div>
+</section>
+
+<section>
+  <h2>The corpus — 58 recordings</h2>
+  <table>
+    <thead><tr><th>Scenario family</th><th>Example .trc</th><th>What it pins</th></tr></thead>
+    <tbody>
+      <tr><td>TipPickup</td><td><code>TipPickup1ml_ComTrace.trc</code></td><td>Init handshake + C0TP + C0TR on 1 mL channels</td></tr>
+      <tr><td>AspirateAndDispensePositions</td><td><code>Pipetting1mlCapacitiveLLD_ComTrace.trc</code></td><td>C0AS/C0DS with cLLD / pLLD variants</td></tr>
+      <tr><td>CORE96Head</td><td><code>Pipetting96MPH*.trc</code></td><td>C0EM / C0EP / C0EA / C0ED on the 96-head</td></tr>
+      <tr><td>CORE384Head</td><td><code>Aspirate384*.trc</code></td><td>C0EN / C0JA-JD with the <code>yk / je / zf</code> FW params</td></tr>
+      <tr><td>DispenseOnTheFly</td><td><code>DispenseOnTheFly_ComTrace.trc</code></td><td>C0DF + multi-dispense <code>dc/dx</code> fields</td></tr>
+      <tr><td>GetLastLiquidLevel</td><td><code>GetLastLiquidLevel_*.trc</code></td><td>C0RL response format (<code>lh</code> vs <code>rl</code>)</td></tr>
+      <tr><td>LoadCarrier</td><td><code>LoadCarrier*.trc</code></td><td>I0 autoload timing + carriage motion</td></tr>
+      <tr><td>MethodTermination</td><td><code>MethodTermination*.trc</code></td><td>Abort / cleanup command sequence</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warning" style="margin-top: 0.7em;">
+    <div class="label">NOT IN GIT</div>
+    The corpus lives under <code>VENUS-2026-04-13/</code> next to the working
+    copy (~GB of binary). CI runners don't have it, so <code>fw-trace-replay.test.ts</code>
+    throws on-missing and is excluded from the CI unit job.
+  </div>
+</section>
+
+<section>
+  <h2>Pinning canned responses to VENUS source lines</h2>
+  <p class="small muted">Every non-trivial FW response in <code>digital-twin.ts</code> has a line reference to a real VENUS recording or C++ source:</p>
+  <pre style="font-size: 0.52em;"><code class="language-typescript">// C0QM — STAR deck config query. VENUS cross-checks `xw` before
+// allowing the instrument to drive the arm off the rail, so a
+// wrong value → silent-reject everywhere. Value pinned to
+// AtsMcInstrumentInfo.cpp:284 (xw = 13400 for the STAR platform,
+// not derived from track count — VENUS's own cfg re-checks).
+"C0QM": "xw13400ka010301ke000000bdc_modulenumber=1",
+
+// C0QC — cover state. VENUS's OnOffType is inverted from the
+// obvious reading: Off=0=OPEN, On=1=CLOSED. Error raised on
+// `coverState == Off`. See RunLockFrontCover.cpp:125.
+"C0QC": coverOpen ? "qc0" : "qc1",
+
+// C0RL — Last LLD heights. Real format is `lh` (not `rl`).
+// See AtsMcGetLastLiquidLevel.cpp:67.
+"C0RL": `lh${heights.map(fmt4).join(" ")}`,</code></pre>
+  <div class="callout insight" style="margin-top: 0.4em; font-size: 0.8em;">
+    User rule: find the real-trace line, pin the value, commit. No guessing.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 02 — fw-trace-replay harness
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 02</div>
+  <h1>Shape-match, don't value-match</h1>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">fw-trace-replay lifecycle</h3>
+  <div class="mermaid">
+sequenceDiagram
+    participant T as .trc file
+    participant P as Parser
+    participant H as Harness
+    participant S as BDZ bridge
+    participant Tw as Twin (in-process)
+
+    T->>P: read text
+    P->>P: split on \n · parse &lt;/&gt; lines
+    P-->>H: ordered request/response pairs (first 30)
+    H->>Tw: createTestTwin()
+    H->>S: startFwServer({api, simSpeed:0})
+    loop for each pair
+      H->>S: socket.write(request + \r\n)
+      S->>Tw: sendCommand (sync)
+      Tw-->>S: response line
+      S-->>H: response
+      H->>H: parseResponseShape(actual) vs (expected)
+    end
+    Note over H: All 30 matched → test green<br/>Any mismatch → one error with every divergence listed
+  </div>
+  <div class="caption"><code>tests/integration/fw-trace-replay.test.ts</code> · ~1 s end-to-end</div>
+</section>
+
+<section>
+  <h2>Why <i>shape</i>, not value</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>What shape check looks at</h3>
+      <ul>
+        <li><code>prefix</code> — the 4-char <code>C0XX</code> code</li>
+        <li><code>id####</code> — 4-digit order id must match</li>
+        <li><code>er##</code> / <code>er##/##</code> — error shape equivalence</li>
+        <li><code>fields[]</code> — set of 2-char named keys must be a superset</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What it ignores</h3>
+      <ul>
+        <li>Numeric values (grip force, Z position, serial)</li>
+        <li>Field order (keys compared as sets)</li>
+        <li>Whitespace + end-of-line</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout" style="margin-top: 0.8em;">
+    <div class="label">RATIONALE</div>
+    Real hardware returns 0x0ACB grip force, 1780 Z position, serial <code>SN-1234567</code>
+    — the twin can't reproduce those bit-for-bit. But if the twin <i>drops</i> the
+    <code>lh</code> field, VENUS's parser returns <code>undefined</code> for "last liquid level"
+    and the next command silently rejects. Shape-match catches that.
+  </div>
+</section>
+
+<section>
+  <h2>Parsing a response down to its fingerprint</h2>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">interface ParsedResponse {
+  prefix: string;               // module+code, e.g. "C0RF"
+  orderId: string | null;       // "0004"
+  error: { main: string; detail: string | null } | null;  // "er00" or "er25/02"
+  fields: string[];             // ordered list of named 2-char keys
+}
+
+// Field extraction: 2-char lowercase token followed by a non-alpha char.
+// Filters out incidental letter pairs that are part of a value.
+const fieldRe = /([a-z]{2})(?=[^a-z]|$)/g;
+
+// Success = actual shape is a SUPERSET of expected. Twin may emit extra
+// debug fields, but must never DROP a field VENUS reads.
+for (const f of expected.fields) {
+  if (!actual.fields.includes(f)) return `missing field ${f}`;
+}</code></pre>
+  <div class="callout insight center" style="font-size: 0.8em; margin-top: 0.4em;">
+    First 30 pairs of <code>TipPickup1ml_ComTrace.trc</code> covers every module's init handshake.
+    <br/>Break any response shape → test fails with every divergence reported at once.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 03 — SCXML pinned per command
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 03</div>
+  <h1>One test per FW command</h1>
+</section>
+
+<section>
+  <h2>Unit tests sit at SCXML-transition granularity</h2>
+  <table class="small">
+    <thead><tr><th>File</th><th>What it pins</th></tr></thead>
+    <tbody>
+      <tr><td><code>c0as-c0ds-fidelity.test.ts</code></td><td>43+36 <code>C0AS</code>/<code>C0DS</code> FW parameters → <code>AtsMcAspirate.cpp</code> / <code>AtsMcDispense.cpp</code> line numbers</td></tr>
+      <tr><td><code>c0tp-c0as-c0tr-tm-isolation.test.ts</code></td><td>Per-channel isolation across <code>tm</code>-masked ops (today's SCXML fix)</td></tr>
+      <tr><td><code>c0tp-empty-well.test.ts</code></td><td>Tip-pickup from unresolved coords — assessment event shape</td></tr>
+      <tr><td><code>c0tp-mask-validation.test.ts</code></td><td><code>tm</code> parse + "tip already fitted" rejection</td></tr>
+      <tr><td><code>motion-envelope.test.ts</code></td><td>Envelope startX/Y/Z for pip · iswap · h96 · h384 · autoload</td></tr>
+      <tr><td><code>iswap-plate-dims.test.ts</code></td><td>C0PP footprint resolution from labware under the gripper</td></tr>
+      <tr><td><code>scxml-restore.test.ts</code></td><td>Snapshot → restore round-trip survives SCXML state hierarchy</td></tr>
+      <tr><td><code>fdx-init-responses.test.ts</code></td><td>Canned responses for C0RF / C0RM / C0RI / C0QM / C0QC</td></tr>
+      <tr><td><code>discovery-server.test.ts</code></td><td>BDZ UDP broadcast handshake (VENUS Discover Instruments)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Anatomy of a per-command test</h2>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">it("aspirate tm=2 leaves ch0 volume untouched", () =&gt; {
+  twin = createTestTwin();                             // 1. sync in-process
+  const tip = twin.wellXY("TIP001", 0, 0, 0);
+  twin.sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04tp2264tz2164th2450td1`);
+  twin.fillPlate("SMP001", 0, "water", 15000);         // 2. arrange state
+  const smp = twin.wellXY("SMP001", 0, 0, 0);
+
+  // Aspirate 500 on ch0 (tm=1)
+  twin.sendCommand(`C0ASid0002xp${smp.xp}yp${smp.yp}av00500tm01lm0`);
+  const vol_after_ch0 = twin.getState().modules.pip!.variables.volume as number[];
+  expect(vol_after_ch0[0]).toBe(500);                  // 3. exact equality
+  expect(vol_after_ch0[1]).toBe(0);                    //    not toBeGreaterThan
+
+  // Aspirate 300 on ch1 (tm=2) — ch0 must STAY at 500
+  twin.sendCommand(`C0ASid0003xp${smp.xp}yp${smp.yp}av00300tm02lm0`);
+  const vol_after_ch1 = twin.getState().modules.pip!.variables.volume as number[];
+  expect(vol_after_ch1[0]).toBe(500);   // ← before fix: gets overwritten with 300
+  expect(vol_after_ch1[1]).toBe(300);   // 4. assert the delta, not just "accepted"
+});</code></pre>
+  <div class="callout insight center" style="font-size: 0.8em;">
+    <b>TESTING-GUIDE.md:</b> "Test physical outcomes, not command mechanics. Before/after capture. Exact equality."
+  </div>
+</section>
+
+<section>
+  <h2>SCXML fix cycle</h2>
+  <div class="cols three">
+    <div class="card">
+      <h3 class="accent">1 · Edit source</h3>
+      <p><code>scxml/pip_channel.scxml</code> — human-authored, visually laid out via VSCXML editor metadata.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-2">2 · Regenerate</h3>
+      <p><code>mcp__vscxml__scxml_generate</code> with <code>options.className=PipChannelSM</code>. Keeps the existing module name stable.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent-3">3 · Ship JS</h3>
+      <p>Copy to <code>src/state-machines/modules/</code> + <code>dist/</code>. Never hand-edit the generated JS.</p>
+    </div>
+  </div>
+  <div class="callout warning" style="margin-top: 0.5em;">
+    <div class="label">TODAY'S FIX</div>
+    <code>c0tp-c0as-c0tr-tm-isolation.test.ts</code> excluded from CI for months because the
+    SCXML scripts iterated <code>for (i=0..15) if (tip_fitted[i])</code> regardless of <code>tm</code>.
+    Fixed by gating per-channel writes on <code>tm &amp; (1&lt;&lt;i)</code> and splitting C0TR into
+    partial-eject vs full-eject transitions. 4 failing tests → 0; exclusion removed from CI.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 04 — In-process sync twin
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 04</div>
+  <h1>The twin fits in a test</h1>
+</section>
+
+<section>
+  <h2><code>createTestTwin()</code> — one function, full twin</h2>
+  <pre style="font-size: 0.52em;"><code class="language-typescript">// tests/helpers/in-process.ts
+export function createTestTwin(options: CreateTestTwinOptions = {}): TestTwin {
+  const { autoInit = true, ...deviceConfig } = options;
+  const api = new DigitalTwinAPI();            // runtime loaded from dist/ (CJS)
+  const deviceId = api.createDevice({ name: "TestTwin", ...deviceConfig });
+
+  return {
+    deviceId, api,
+    sendCommand:    (raw)  =&gt; api.sendCommand(deviceId, raw),
+    sendCompletion: (evt)  =&gt; api.sendCompletion(deviceId, evt),
+    flushPending:   ()     =&gt; api.flushPendingEvents(deviceId),
+    reset:          ()     =&gt; api.resetDevice(deviceId),
+    initAll,          // auto-runs C0VI/C0DI/C0EI/C0II on construction
+    getState, getModuleStates, getModuleVars,
+    getTracking, getAssessments,
+    wellXY,           // resolves "SMP001", pos 0, col 3, row A → { xp, yp }
+    fillPlate,        // arrange liquid-tracker state before a test
+    onEvent, destroy,
+  };
+}</code></pre>
+  <div class="callout" style="margin-top: 0.6em;">
+    <div class="label">WHY DIST/, NOT SRC/</div>
+    The SCXML modules are generated as ESM import + CJS require hybrids. The
+    runtime loads them via <code>require()</code>, which needs the <code>dist/</code>
+    build output (plus <code>scripts/convert-modules.js</code>). Testing against
+    <code>dist/</code> also means we test what Electron / headless actually ships.
+  </div>
+</section>
+
+<section>
+  <h2>Helpers that keep tests readable</h2>
+  <pre style="font-size: 0.52em;"><code class="language-typescript">// Resolve a labware well to FW coordinates — no deck math in tests
+const tip = twin.wellXY("TIP001", 0, 0, 0);    // { xp: "01033", yp: "01375" }
+twin.sendCommand(`C0TPid0001xp${tip.xp}yp${tip.yp}tm255tt04`);
+
+// Pre-populate liquid state before a test
+twin.fillPlate("SMP001", 0, "water", 15000);
+
+// Inspect datamodel directly
+const state = twin.getState();
+const volumes = state.modules.pip!.variables.volume as number[];
+const fitted  = state.modules.pip!.variables.tip_fitted as boolean[];
+
+// Inspect emitted assessment stream (physics observations)
+const evts = twin.getAssessments({ category: "volume_underflow", channel: 2 });
+
+// Flush delayed SCXML sends (C0TP triggers a `move.done` delay)
+twin.flushPending();</code></pre>
+  <div class="callout insight" style="font-size: 0.8em; margin-top: 0.4em;">
+    No mocking. No stubbing. Tests drive the real twin; assertions read the real datamodel.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 05 — Discipline
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 05</div>
+  <h1>Failure injection or it doesn't count</h1>
+</section>
+
+<section>
+  <h2>Every new test proves it can catch a regression</h2>
+  <div class="injection-grid">
+    <div class="panel">
+      <h4>FAILURE INJECTION</h4>
+      <p>Prose at the top of each test file listing the bugs this test would catch. Reviewer's checklist: "If I break <i>X</i>, does this fail?"</p>
+    </div>
+    <div class="panel test">
+      <h4>EXAMPLE</h4>
+      <p>"If <code>computeStateAt</code> skips the re-execution step, <code>jump(N).state</code> equals <code>initialState</code> for all N — the aspirate-changes-volume case fails."</p>
+    </div>
+  </div>
+  <pre style="font-size: 0.5em; margin-top: 0.6em;"><code class="language-typescript">/**
+ * Per-channel state isolation for C0TP / C0AS / C0DS / C0TR.
+ *
+ * FAILURE INJECTION
+ *   - If C0AS overwrites volume[i] for EVERY fitted channel (not just
+ *     masked), "aspirate tm=2 leaves ch0 volume untouched" fails.
+ *   - If C0TR ejects ALL fitted channels on a partial mask, "partial
+ *     eject (tm=1) keeps other channels' tips" fails.
+ *   - If C0TP rejects any second pickup (error 07) instead of accepting
+ *     non-overlapping masks, "pickup subset then add more" fails.
+ */</code></pre>
+</section>
+
+<section>
+  <h2>Banned patterns</h2>
+  <table class="small">
+    <thead><tr><th>Pattern</th><th>Why it's banned</th><th>Use instead</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>expect(result.accepted).toBe(true)</code></td>
+        <td>Command was accepted — says nothing about physics.</td>
+        <td>Capture before + after state; assert the delta.</td>
+      </tr>
+      <tr>
+        <td><code>expect(vol).toBeGreaterThan(0)</code></td>
+        <td>Passes for wrong values (1, 500, 5 000 all "greater than 0").</td>
+        <td><code>toBe(500)</code> — exact equality.</td>
+      </tr>
+      <tr>
+        <td><code>expect(state).toBeDefined()</code></td>
+        <td>Always true when no exception thrown.</td>
+        <td>Assert specific fields + values.</td>
+      </tr>
+      <tr>
+        <td>Mocking <code>sendCommand</code></td>
+        <td>Tests the mock, not the twin.</td>
+        <td>Use <code>createTestTwin()</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout warning" style="margin-top: 0.6em;">
+    <div class="label">RULE</div>
+    A test that never fails against bugs is worse than no test. The
+    <code>tests/TESTING-GUIDE.md</code> discipline is reviewable: every PR adds
+    tests with an explicit "what would break this" paragraph.
+  </div>
+</section>
+
+<!-- ============================================================
+     SIMULATION VS REAL DEVICE
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">SIMULATION VS REAL</div>
+  <h1>The precondition</h1>
+</section>
+
+<section>
+  <h2>VENUS has two modes — the twin picks which</h2>
+  <table class="small">
+    <thead>
+      <tr><th></th><th class="accent-4">Simulation</th><th class="accent-2">Real instrument</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>Header reads</b></td><td><code>Instrument: Simulation</code></td><td><code>Instrument: &lt;device name&gt;</code></td></tr>
+      <tr><td><b>Selected via</b></td><td>Built-in fallback when no device is configured</td><td>System Configuration Editor → pick a discovered BDZ device</td></tr>
+      <tr><td><b>FW pipeline</b></td><td>VENUS stubs every response internally</td><td>Every C0xx round-trips through TCP to the controller</td></tr>
+      <tr><td><b>Physics / TADM</b></td><td>Not engaged — pure path-through</td><td>Engaged — pressure curves, LLD, grip-force checks</td></tr>
+      <tr><td><b>Method editor</b></td><td>Accepts anything — no instrument to reject</td><td>Cross-checks advertised config (<code>xw</code>, <code>ka</code>, <code>ru</code>) before accepting</td></tr>
+      <tr><td><b>Errors surface</b></td><td>Never — silent success</td><td><code>er##</code> + <code>er##/##</code> on every real rejection</td></tr>
+    </tbody>
+  </table>
+  <div class="callout insight" style="margin-top: 0.6em;">
+    <div class="label">WHY THE TWIN WANTS TO BE "REAL"</div>
+    End-to-end tests driving VENUS 6.0.2 against <code>Simulation</code> would exercise
+    VENUS's stub path — no FW pipeline, no physics, no rejections. Silent success
+    proves nothing. The twin earns "real" treatment by speaking the BDZ discovery
+    handshake byte-for-byte against VENUS's parser.
+  </div>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">The discovery handshake</h3>
+  <div class="mermaid">
+sequenceDiagram
+    participant V as VENUS
+    participant D as Twin discovery<br/>UDP :34569
+    participant T as Twin bridge<br/>TCP :34567 · FW :9999
+
+    V->>D: HAMILTON_BROADCAST<br/>bdc_headerid 2271560481
+    D-->>V: bdc_modulename MLSTARPipettor<br/>bdc_hamsmartport 34567
+    Note over V: Filter: modulename == MLSTARPipettor<br/>AND interfaceprotocol == 2 (FDx)
+    V->>T: R_GETDEVICELIST device_nr 0
+    T-->>V: r_device_name · r_device_interfacedata :9999<br/>r_device_interfaceprotocol 2
+    V->>T: R_GETDEVICELIST device_nr 1
+    T-->>V: r_device_used 0 (end)
+    Note over V: Instrument picker shows the twin<br/>User selects → header reads "Instrument: &lt;twin name&gt;"
+    V->>T: C0VI / C0DI / C0QM / C0RF / …
+  </div>
+  <div class="caption">One wrong field → VENUS filters the twin out of the picker → user falls back to Simulation.</div>
+</section>
+
+<section>
+  <h2>What the twin advertises — pinned to VENUS source</h2>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">// src/services/bdz-bridge/discovery-server.ts — values baked in
+//   because VENUS explicitly filters on them.
+
+/** STAR module-type string — HxStarConfigClass.cs:1339 ModuleTypeStarPipettor */
+export const STAR_MODULE_TYPE = "MLSTARPipettor";
+
+/** FDx interface-protocol code — HxStarConfigClass.cs:1367 (protocol == 2) */
+export const FDX_INTERFACE_PROTOCOL = "2";
+
+/** UDP discovery port — ModuleControllerInfo.cpp:24 DiscoveryPort */
+export const DEFAULT_DISCOVERY_PORT = 34569;
+
+/** TCP R_GETDEVICELIST port — ModuleControllerInfo.cpp:25 HamsmartPort */
+export const DEFAULT_HAMSMART_PORT = 34567;
+
+/** Magic number VENUS stamps on every valid probe — 0x87654321 */
+export const HEADER_ID = "2271560481";</code></pre>
+  <div class="cols" style="margin-top: 0.4em;">
+    <div class="card">
+      <h3 class="accent-2">Unlocks full pipeline</h3>
+      <ul>
+        <li>Discovery: UDP unicast reply with exact <code>bdc_*</code> field list</li>
+        <li>Enumeration: TCP reply with <code>r_device_interfaceprotocol 2</code></li>
+        <li>FW: init sequence responds with VENUS-expected fields (<code>rf</code>, <code>kb</code>, <code>lh</code>, <code>ru</code>, …)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="accent-4">Drops to Simulation</h3>
+      <ul>
+        <li>Missing / misspelled <code>bdc_modulename</code> field</li>
+        <li><code>r_device_interfaceprotocol</code> ≠ 2 (only FDx accepted by the STAR config)</li>
+        <li>Init command drops a named field → VENUS can't parse → device rejected</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Testing implication</h2>
+  <div class="cols">
+    <div class="card">
+      <h3 class="accent">Bridge tests</h3>
+      <p>
+        <code>tests/unit/discovery-server.test.ts</code> + <code>fdx-init-responses.test.ts</code>
+        pin every byte VENUS's parser reads. Break one of these, VENUS drops the twin from the
+        picker — silently.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="accent-2">Method-level E2E</h3>
+      <p>
+        <code>runVenusMethod(..., via: "venus-web-api")</code> only makes sense against a
+        twin VENUS sees as real. In Simulation mode, there's nothing to test —
+        VENUS isn't calling FW.
+      </p>
+    </div>
+  </div>
+  <div class="callout warning" style="margin-top: 0.6em;">
+    <div class="label">CATCHING THE SILENT DROP</div>
+    The worst failure mode is VENUS quietly picking Simulation instead of the twin —
+    tests pass internally but the "real VENUS" end-to-end ran against a stub. The
+    <code>.trc</code> replay harness + VENUS-6.0.2-sourced init responses are the
+    fence: the twin can't shape-match a real recording and still be simulation-treated.
+  </div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 06 — Method runner
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 06</div>
+  <h1>Deck-agnostic method runner</h1>
+</section>
+
+<section>
+  <h2>One helper. Three backends.</h2>
+  <pre style="font-size: 0.52em;"><code class="language-typescript">await runVenusMethod(server, {
+  initialize: true,
+  tipPickup: { carrier: "TIP001", pos: 0, wellA1: true, channels: 8 },
+  aspirate:  { carrier: "SMP001", pos: 0, wellA1: true, volumeUl: 100 },
+  dispense:  { carrier: "DST001", pos: 0, wellA1: true, volumeUl: 100 },
+  tipEject:  "waste",
+});</code></pre>
+  <div class="cols three" style="margin-top: 0.6em;">
+    <div class="card">
+      <h3>viaInProcess</h3>
+      <p>Synchronous via <code>createTestTwin</code>. No server, no network. <b>CI path.</b></p>
+    </div>
+    <div class="card">
+      <h3>viaTwinHttp</h3>
+      <p>REST <code>/command</code> roundtrip. Tests the full HTTP + SSE + bridge loop.</p>
+    </div>
+    <div class="card">
+      <h3>viaVenusWebApi</h3>
+      <p>Gated on <code>VENUS_HOST</code> env. Real VENUS 6.0.2 drives the twin. Skipped cleanly when unset.</p>
+    </div>
+  </div>
+  <div class="callout insight" style="margin-top: 0.4em;">
+    <div class="label">ONE API, THREE FIDELITIES</div>
+    Same method description runs end-to-end through the twin in ~ms (in-process),
+    through the bridge in ~100 ms (HTTP), or via a real VENUS installation (Web API).
+    Tests pick their fidelity; the assertions stay the same.
+  </div>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">runVenusMethod pipeline</h3>
+  <div class="mermaid">
+flowchart LR
+    method["MethodDescription<br/>initialize · tipPickup · asp · disp · eject"]
+    resolve["deck snapshot<br/>wellA1 → xp/yp"]
+    emit["FW command stream<br/>C0DI · C0TP · C0AS · C0DS · C0TR"]
+
+    subgraph be["Backend (pick one)"]
+      direction TB
+      ip["in-process · sync"]
+      http["twin-http · fetch"]
+      web["venus-web-api · Hamilton SDK"]
+    end
+
+    result["RunResult<br/>log · summary · errors"]
+
+    method --> resolve --> emit
+    emit --> ip
+    emit --> http
+    emit --> web
+    ip --> result
+    http --> result
+    web --> result
+  </div>
+  <div class="caption"><code>tests/helpers/venus-method.ts</code> · same assertions, three fidelities</div>
+</section>
+
+<!-- ============================================================
+     PRINCIPLE 07 — Twin's own replay
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">PRINCIPLE 07</div>
+  <h1>The twin records its own trace</h1>
+</section>
+
+<section>
+  <h2>Different trace, different purpose</h2>
+  <table class="small">
+    <thead><tr><th></th><th class="accent">VENUS .trc</th><th class="accent-2">Twin trace (PSI)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Author</b></td><td>Real instrument's firmware</td><td>Twin's <code>TraceRecorder</code> service</td></tr>
+      <tr><td><b>Format</b></td><td>ASCII lines (<code>&lt;</code>/<code>&gt;</code> + payload)</td><td>JSON spine · correlation IDs · periodic snapshots</td></tr>
+      <tr><td><b>Used for</b></td><td>Regression against FW wire format</td><td>Scrubber UI · what-if fork · analysis</td></tr>
+      <tr><td><b>Invariant</b></td><td>Response shape match</td><td><code>jump(N).step('forward').state == jump(N+1).state</code></td></tr>
+      <tr><td><b>Fidelity gate</b></td><td>Hardware-accurate</td><td>Deterministic re-execution</td></tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top: 0.6em;">
+    <div class="label">WHY BOTH</div>
+    <b>VENUS traces</b> prove the twin matches real firmware. <b>Twin traces</b>
+    prove the PSI analysis stack (phase-3 replay, what-if, scrubber) reconstructs
+    state losslessly. Same principle — recordings as regression oracles — applied
+    at two different layers.
+  </div>
+</section>
+
+<section>
+  <h2>The replay invariant</h2>
+  <pre style="font-size: 0.5em;"><code class="language-typescript">// tests/unit/trace-replay-service.test.ts
+it("jump(N) followed by step(forward) equals jump(N+1)", () =&gt; {
+  const trace = buildTrace();             // record fresh
+  const replayA = new TraceReplayService(trace);
+  const replayB = new TraceReplayService(trace);
+
+  for (let n = 1; n &lt; trace.events.length - 1; n++) {
+    replayA.jump(n);
+    replayA.step("forward");
+    replayB.jump(n + 1);
+
+    expect(replayA.state).toEqual(replayB.state);   // ← the property test
+  }
+});</code></pre>
+  <div class="callout insight" style="font-size: 0.8em;">
+    Breaks if <code>computeStateAt</code> skips re-execution, if snapshots miss a field,
+    or if the event spine drops correlation IDs. One test, three classes of regression.
+  </div>
+</section>
+
+<!-- ============================================================
+     CI TOPOLOGY
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">CI TOPOLOGY</div>
+  <h1>Four jobs. Two gate.</h1>
+</section>
+
+<section>
+  <h2><code>.github/workflows/test.yml</code></h2>
+  <table class="small">
+    <thead><tr><th>Job</th><th>Runs</th><th>Gate</th><th>Why this split</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="accent-2"><b>unit</b></td>
+        <td><code>tests/unit</code> except <code>venus-import</code></td>
+        <td class="accent-2"><b>Blocking</b></td>
+        <td>434 tests · ~7 s · covers every SCXML / physics / motion path.</td>
+      </tr>
+      <tr>
+        <td class="accent-2"><b>fw-integration</b></td>
+        <td>fw-server · contamination · no-deck-effect · fw-bridge-asp-disp-volume</td>
+        <td class="accent-2"><b>Blocking</b></td>
+        <td>The 4 integration tests that don't need the VENUS corpus or Hamilton install.</td>
+      </tr>
+      <tr>
+        <td class="accent-3"><b>visual</b> <small class="mono">(continue-on-error)</small></td>
+        <td>tutorial-screenshots (pixelmatch)</td>
+        <td class="accent-3">Smoke</td>
+        <td>Windows-captured baselines drift on Linux fonts — diffs uploaded as artifacts.</td>
+      </tr>
+      <tr>
+        <td class="accent-3"><b>e2e-click-routing</b> <small class="mono">(continue-on-error)</small></td>
+        <td>click-routing against Method1.lay</td>
+        <td class="accent-3">Smoke</td>
+        <td>Needs the Hamilton install fixture — CI runner doesn't have it.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top: 0.5em;">
+    <div class="label">DELIBERATELY OFF CI</div>
+    <code>fw-trace-replay.test.ts</code> + <code>venus-import.test.ts</code> both require the
+    VENUS-2026-04-13 corpus next to the working copy. Local-only; the
+    <code>beforeAll</code> throws loudly if the fixture is absent.
+  </div>
+</section>
+
+<section class="mermaid-slide">
+  <h3 class="center">CI gate flow</h3>
+  <div class="mermaid">
+flowchart LR
+    pr["PR / push to master"]
+
+    subgraph gate["BLOCKING"]
+        direction LR
+        u["unit (434 tests)"]
+        i["fw-integration (13 tests)"]
+    end
+
+    subgraph smoke["CONTINUE-ON-ERROR"]
+        direction LR
+        v["visual pixelmatch"]
+        e["e2e click-routing"]
+    end
+
+    merge{"merge allowed?"}
+
+    pr --> u
+    pr --> i
+    pr --> v
+    pr --> e
+
+    u -->|must pass| merge
+    i -->|must pass| merge
+    v -.->|artifacts only| merge
+    e -.->|artifacts only| merge
+  </div>
+  <div class="caption">Pass the two blocking jobs → mergeable. Smoke jobs surface infrastructure breakage.</div>
+</section>
+
+<!-- ============================================================
+     THE 2026-04-20 STORY
+============================================================ -->
+<section class="section-divider">
+  <div class="tag">TODAY'S EXAMPLE</div>
+  <h1>The full loop — in one session</h1>
+</section>
+
+<section>
+  <h2>How the envelope-jump bug closed</h2>
+  <table class="small">
+    <thead><tr><th>Step</th><th>What</th><th>Test surface</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>User reports "arm jumps back between envelopes"</td><td>Manual observation</td></tr>
+      <tr><td>2</td><td>Trace the bug to stale <code>pos_y[0]</code> in <code>extractMotionEnvelope</code> + renderer post-envelope snap</td><td>Code reading</td></tr>
+      <tr><td>3</td><td>Fix <code>startY</code> reconstruction + <code>endY</code> from <code>_yp_array</code> + drop the snap-to-target</td><td>Code edit</td></tr>
+      <tr><td>4</td><td>Add regression test: masked aspirate leaves envelope startY at ch0-equivalent</td><td><code>motion-envelope.test.ts</code> (unit)</td></tr>
+      <tr><td>5</td><td>User reports: still jumps between envelopes</td><td>Manual observation</td></tr>
+      <tr><td>6</td><td>Identify that the post-envelope snap was the culprit; narrow fix</td><td>Code reading</td></tr>
+      <tr><td>7</td><td>Fix SCXML per-channel isolation (<code>tm</code>-gated writes + partial-eject split)</td><td>XML edit + VSCXML regen</td></tr>
+      <tr><td>8</td><td>The previously-excluded <code>c0tp-c0as-c0tr-tm-isolation.test.ts</code> goes green</td><td>Unit (now on CI)</td></tr>
+      <tr><td>9</td><td>Drop the <code>--exclude</code> from <code>.github/workflows/test.yml</code></td><td>CI config</td></tr>
+    </tbody>
+  </table>
+  <div class="callout insight" style="font-size: 0.8em;">
+    Three fixes · five new assertions · one CI exclusion retired · release
+    <code>snapshot-20260420-1543</code>. The layered harness meant every fix
+    landed with a test that proves it.
+  </div>
+</section>
+
+<!-- ============================================================
+     CLOSER
+============================================================ -->
+<section class="title-slide">
+  <div class="eyebrow">A TESTING PATTERN</div>
+  <h1 style="font-size: 2.5em;">
+    Record reality.<br/>
+    Replay the wire.<br/>
+    Assert the delta.
+  </h1>
+  <div class="sub" style="margin-top: 1.5em;">
+    Hardware simulators stay correct when real recordings drive them,
+    and real deltas — not "command accepted" — decide pass / fail.
+  </div>
+  <div class="meta">
+    hamilton-star-twin · <span>docs/TESTING-GUIDE.md</span> · <span>docs/testing-slides.html</span>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.min.js"></script>
+<script>
+  // Same palette pairs the architecture deck uses — ensures the two
+  // decks read as a matched set on light AND dark.
+  const MERMAID_THEMES = {
+    dark: {
+      darkMode: true,
+      background: "transparent",
+      primaryColor: "#1c2128",
+      primaryTextColor: "#e6edf3",
+      primaryBorderColor: "#30363d",
+      secondaryColor: "#161b22",
+      tertiaryColor: "#0d1117",
+      lineColor: "#8b949e",
+      textColor: "#e6edf3",
+      fontSize: "15px",
+      fontFamily: "Inter, sans-serif",
+      actorBkg: "#1c2128", actorBorder: "#58a6ff", actorTextColor: "#e6edf3",
+      actorLineColor: "#58a6ff",
+      signalColor: "#8b949e", signalTextColor: "#e6edf3",
+      labelBoxBkgColor: "#1c2128", labelBoxBorderColor: "#58a6ff", labelTextColor: "#e6edf3",
+      noteBkgColor: "#1c2128", noteBorderColor: "#f5be3c", noteTextColor: "#e6edf3",
+      stateBkg: "#1c2128", stateBorder: "#58a6ff", stateLabelColor: "#e6edf3",
+      labelColor: "#e6edf3",
+      compositeTitleBackground: "#161b22", altBackground: "#161b22",
+      nodeBorder: "#58a6ff",
+      clusterBkg: "transparent", clusterBorder: "#30363d",
+      defaultLinkColor: "#8b949e", edgeLabelBackground: "#161b22",
+      titleColor: "#e6edf3", nodeTextColor: "#e6edf3",
+      transitionColor: "#8b949e", transitionLabelColor: "#e6edf3",
+    },
+    light: {
+      darkMode: false,
+      background: "transparent",
+      primaryColor: "#ffffff",
+      primaryTextColor: "#1c2128",
+      primaryBorderColor: "#d0d7de",
+      secondaryColor: "#f6f8fa",
+      tertiaryColor: "#fbfcfd",
+      lineColor: "#57606a",
+      textColor: "#1c2128",
+      fontSize: "15px",
+      fontFamily: "Inter, sans-serif",
+      actorBkg: "#ffffff", actorBorder: "#0969da", actorTextColor: "#1c2128",
+      actorLineColor: "#0969da",
+      signalColor: "#57606a", signalTextColor: "#1c2128",
+      labelBoxBkgColor: "#ffffff", labelBoxBorderColor: "#0969da", labelTextColor: "#1c2128",
+      noteBkgColor: "#fff8c5", noteBorderColor: "#bf8700", noteTextColor: "#24292f",
+      stateBkg: "#ffffff", stateBorder: "#0969da", stateLabelColor: "#1c2128",
+      labelColor: "#1c2128",
+      compositeTitleBackground: "#f6f8fa", altBackground: "#f6f8fa",
+      nodeBorder: "#0969da",
+      clusterBkg: "transparent", clusterBorder: "#d0d7de",
+      defaultLinkColor: "#57606a", edgeLabelBackground: "#ffffff",
+      titleColor: "#1c2128", nodeTextColor: "#1c2128",
+      transitionColor: "#57606a", transitionLabelColor: "#1c2128",
+    },
+  };
+
+  const mermaidSources = [];
+  document.querySelectorAll(".mermaid").forEach((el, i) => {
+    mermaidSources.push({ el, src: el.textContent.trim() });
+    el.dataset.idx = String(i);
+  });
+
+  function initMermaid(theme) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "base",
+      themeVariables: MERMAID_THEMES[theme],
+      flowchart: {
+        curve: "basis", padding: 20, nodeSpacing: 40, rankSpacing: 50,
+        htmlLabels: true,
+      },
+      sequence: {
+        diagramMarginX: 40, diagramMarginY: 20, actorMargin: 60,
+        boxMargin: 10, boxTextMargin: 5, noteMargin: 10, messageMargin: 35,
+        mirrorActors: true, bottomMarginAdj: 1, useMaxWidth: true, rightAngles: false,
+      },
+    });
+  }
+
+  async function renderAllMermaid(theme) {
+    initMermaid(theme);
+    for (let i = 0; i < mermaidSources.length; i++) {
+      const { el, src } = mermaidSources[i];
+      try {
+        const { svg } = await mermaid.render("mmd-" + theme + "-" + i, src);
+        el.innerHTML = svg;
+      } catch (err) {
+        console.error("mermaid render failed", i, err);
+      }
+    }
+  }
+
+  // --- Theme handling --------------------------------------------------
+  const THEME_KEY = "testing-slides-theme";
+  function currentTheme() {
+    return document.body.getAttribute("data-theme") || "dark";
+  }
+  function applyTheme(theme) {
+    document.body.setAttribute("data-theme", theme);
+    const link = document.getElementById("theme");
+    if (link) {
+      link.href = theme === "light"
+        ? "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+        : "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css";
+    }
+    const hljs = document.getElementById("hljs-theme");
+    if (hljs) {
+      hljs.href = theme === "light"
+        ? "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css"
+        : "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
+    }
+    const btn = document.querySelector(".theme-toggle");
+    if (btn) btn.textContent = theme === "light" ? "Dark" : "Light";
+    localStorage.setItem(THEME_KEY, theme);
+    renderAllMermaid(theme);
+  }
+  window.toggleTheme = function () {
+    applyTheme(currentTheme() === "light" ? "dark" : "light");
+  };
+
+  (async () => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") applyTheme(saved);
+    else await renderAllMermaid("dark");
+
+    Reveal.initialize({
+      hash: true,
+      slideNumber: "c/t",
+      transition: "slide",
+      transitionSpeed: "default",
+      backgroundTransition: "fade",
+      controls: true,
+      progress: true,
+      center: true,
+      width: 1280,
+      height: 920,
+      margin: 0.03,
+      minScale: 0.3,
+      maxScale: 1.4,
+      plugins: [RevealHighlight],
+      keyboard: {
+        84: () => window.toggleTheme(),   // 'T' toggles theme
+      },
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:editor="http://vscxml.com/editor" version="1.0" datamodel="ecmascript" initial="empty" name="HamiltonSTAR_DeckSlot">
+  <datamodel>
+    <data id="track" expr="0"/>
+    <data id="carrier_id" expr="&apos;&apos;"/>
+    <data id="carrier_type" expr="&apos;&apos;"/>
+    <data id="carrier_barcode" expr="&apos;&apos;"/>
+    <data id="labware_count" expr="0"/>
+    <data id="last_error" expr="0"/>
+  </datamodel>
+  <state id="empty" editor:x="12" editor:y="124" editor:width="150" editor:height="75" editor:label="empty" editor:color="#2a2a3c" editor:zIndex="0">
+    <transition target="identifying" event="C0CI" editor:waypoints="177,137;177,82" editor:id="t_01KP5JRC21RPK03BX69MSQK1AH">
+      <log expr="'Identifying carrier at track ' + track" label="DECK"/>
+    </transition>
+    <transition target="carrier_loaded" event="C0CL" editor:waypoints="280,149;280,152" editor:id="t_01KP5JRC21YFKKVWW3SNXCYRPW">
+      <assign location="carrier_id" expr="_event.data.id || ''"/>
+      <assign location="carrier_type" expr="_event.data.type || ''"/>
+      <assign location="carrier_barcode" expr="_event.data.barcode || ''"/>
+      <log expr="'Carrier loaded: ' + (_event.data.type || '') + ' at track ' + track" label="DECK"/>
+    </transition>
+    <transition target="error_deck" event="C0CR" editor:waypoints="207,162;207,226" editor:id="t_01KP5JRC21A6FYFXE9E4CSC7GN">
+      <assign location="last_error" expr="9"/>
+      <log expr="'No carrier to unload (error 09)'" label="ERROR"/>
+    </transition>
+  </state>
+  <state id="identifying" editor:x="295" editor:y="44" editor:width="200" editor:height="75" editor:label="identifying" editor:color="#2a2a3c" editor:zIndex="1">
+    <transition target="carrier_loaded" event="identify.done" editor:id="t_01KP5JRC210EY8W91VYCXN37F7">
+      <assign location="carrier_id" expr="_event.data.id || ''"/>
+      <assign location="carrier_type" expr="_event.data.type || ''"/>
+      <assign location="carrier_barcode" expr="_event.data.barcode || ''"/>
+      <log expr="'Carrier identified: ' + carrier_type + ' [' + carrier_id + ']'" label="DECK"/>
+    </transition>
+  </state>
+  <state id="carrier_loaded" initial="no_labware" editor:x="717" editor:y="12" editor:width="823" editor:height="210.02" editor:label="carrier_loaded" editor:color="#1e2a3a" editor:zIndex="2">
+    <transition target="unloading" event="C0CR" editor:waypoints="1658,82;1658,133" editor:id="t_01KP5JRC21HMBFEB899HTBASD9">
+      <log expr="'Unloading carrier ' + carrier_type + ' from track ' + track" label="DECK"/>
+    </transition>
+    <transition target="unloading" event="C0CW" editor:id="t_01KP5JRC21F233J8RK7RFHBA0Q">
+      <log expr="'Unloading carrier finally'" label="DECK"/>
+    </transition>
+    <state id="no_labware" editor:x="618" editor:y="105.02000000000001" editor:width="175" editor:height="75" editor:label="no_labware" editor:color="#2a2a3c" editor:zIndex="3">
+      <transition target="labware_placed" event="labware.place" editor:id="t_01KP5JRC21EF3MMNVWVHA5CPXF">
+        <assign location="labware_count" expr="labware_count + 1"/>
+        <log expr="'Labware placed on ' + carrier_type + ', count=' + (labware_count + 1)" label="DECK"/>
+      </transition>
+    </state>
+    <state id="labware_placed" editor:x="38" editor:y="105.02000000000001" editor:width="225" editor:height="75" editor:label="labware_placed" editor:color="#2a2a3c" editor:zIndex="4">
+      <transition target="labware_placed" event="labware.place" editor:waypoints="128,95.02000000000001;173,95.02000000000001" editor:id="t_01KP5JRC21Q639SQ3DV4J5H9KA">
+        <assign location="labware_count" expr="labware_count + 1"/>
+        <log expr="'Additional labware, count=' + (labware_count + 1)" label="DECK"/>
+      </transition>
+      <transition target="no_labware" event="labware.remove" cond="labware_count &lt;= 1" editor:id="t_01KP5JRC2195FCC8MSFD19VZXP">
+        <assign location="labware_count" expr="0"/>
+        <log expr="'Last labware removed'" label="DECK"/>
+      </transition>
+      <transition target="labware_placed" event="labware.remove" cond="labware_count &gt; 1" editor:waypoints="83,65.02000000000001;218,65.02000000000001" editor:id="t_01KP5JRC21NC8GPQFCY3D64EAA">
+        <assign location="labware_count" expr="labware_count - 1"/>
+        <log expr="'Labware removed, remaining=' + (labware_count - 1)" label="DECK"/>
+      </transition>
+    </state>
+  </state>
+  <state id="unloading" editor:x="1703" editor:y="114" editor:width="175" editor:height="75" editor:label="unloading" editor:color="#2a2a3c" editor:zIndex="5">
+    <transition target="empty" event="unload.done" editor:waypoints="1658,170;1658,296;187,296;187,187" editor:labelRotation="-90" editor:id="t_01KP5JRC21XFD9V7Q7F33CWK6W">
+      <assign location="carrier_id" expr="''"/>
+      <assign location="carrier_type" expr="''"/>
+      <assign location="carrier_barcode" expr="''"/>
+      <assign location="labware_count" expr="0"/>
+      <log expr="'Carrier removed, slot empty'" label="DECK"/>
+    </transition>
+  </state>
+  <state id="error_deck" editor:x="325" editor:y="201" editor:width="175" editor:height="75" editor:label="error_deck" editor:color="#2a2a3c" editor:zIndex="6">
+    <onentry>
+      <log expr="'Deck slot error ' + last_error" label="ERROR"/>
+    </onentry>
+    <transition target="empty" event="C0II" editor:waypoints="197,251;197,174" editor:id="t_01KP5JRC21PAND5EEH8041QDH9">
+      <assign location="last_error" expr="0"/>
+    </transition>
+  </state>
+</scxml>

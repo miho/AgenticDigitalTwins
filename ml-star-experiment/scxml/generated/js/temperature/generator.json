@@ -1,0 +1,25 @@
+{
+  "generator" : "VSCXML-Generator-CLI",
+  "generatorVersion" : "0.1.0",
+  "generatedAt" : "2026-04-13T15:57:06.096873Z",
+  "config" : {
+    "normalizedTarget" : "javascript",
+    "scxml" : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" xmlns:editor=\"http://vscxml.com/editor\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"off\" name=\"HamiltonSTAR_Temperature\">\n  <datamodel>\n    <data id=\"target_temp_01c\" expr=\"0\"/>\n    <data id=\"current_temp_01c\" expr=\"220\"/>\n    <data id=\"zone\" expr=\"1\"/>\n    <data id=\"last_error\" expr=\"0\"/>\n  </datamodel>\n  <state id=\"off\" editor:x=\"100\" editor:y=\"150\" editor:width=\"125\" editor:height=\"75\" editor:label=\"off\" editor:color=\"#2a2a3c\" editor:zIndex=\"0\">\n    <transition target=\"heating\" event=\"C0HI\" editor:id=\"t_01KP3PX774HAGDBN77SNXDQ1M4\">\n      <assign location=\"target_temp_01c\" expr=\"_event.data.hi || 0\"/>\n      <assign location=\"zone\" expr=\"_event.data.hn || 1\"/>\n      <log expr=\"'Set temp (immediate)'\" label=\"FW\"/>\n    </transition>\n    <transition target=\"at_temperature\" event=\"C0HC\" editor:id=\"t_01KP3PX774PQWB9YRFNNDKSHTS\">\n      <assign location=\"target_temp_01c\" expr=\"_event.data.hc || 0\"/>\n      <assign location=\"zone\" expr=\"_event.data.hn || 1\"/>\n      <log expr=\"'Set temp (wait)'\" label=\"FW\"/>\n    </transition>\n    <transition target=\"off\" event=\"C0RP\" editor:id=\"t_01KP3PX774GKFWFDP8WEWD52QB\">\n      <log expr=\"'Query temp: ' + current_temp_01c\" label=\"FW\"/>\n    </transition>\n  </state>\n  <state id=\"heating\" editor:x=\"250\" editor:y=\"150\" editor:width=\"125\" editor:height=\"75\" editor:label=\"heating\" editor:color=\"#2a2a3c\" editor:zIndex=\"1\">\n    <onentry>\n      <log expr=\"'Heating to ' + target_temp_01c + ' (0.1C)'\" label=\"FW\"/>\n    </onentry>\n    <transition target=\"at_temperature\" event=\"temp.reached\" editor:id=\"t_01KP3PX775XXAGS4WR1SAVY0SB\"/>\n    <transition target=\"heating\" event=\"C0HI\" editor:id=\"t_01KP3PX775XVEH6J83CQYMM9RR\">\n      <assign location=\"target_temp_01c\" expr=\"_event.data.hi || 0\"/>\n      <log expr=\"'Change target'\" label=\"FW\"/>\n    </transition>\n    <transition target=\"off\" event=\"C0HF\" editor:id=\"t_01KP3PX775YPX3GEY31QF55N8J\">\n      <assign location=\"target_temp_01c\" expr=\"0\"/>\n      <log expr=\"'Temp off'\" label=\"FW\"/>\n    </transition>\n    <transition target=\"heating\" event=\"C0RP\" editor:id=\"t_01KP3PX7755H92QC6188Z34FRK\">\n      <log expr=\"'Query temp: ' + current_temp_01c\" label=\"FW\"/>\n    </transition>\n    <transition target=\"error_temp\" event=\"temp.error\" editor:id=\"t_01KP3PX775NQCCVEHD4EDJ4K42\">\n      <assign location=\"last_error\" expr=\"19\"/>\n    </transition>\n  </state>\n  <state id=\"at_temperature\" editor:x=\"400\" editor:y=\"150\" editor:width=\"175\" editor:height=\"75\" editor:label=\"at_temperature\" editor:color=\"#2a2a3c\" editor:zIndex=\"2\">\n    <onentry>\n      <assign location=\"current_temp_01c\" expr=\"target_temp_01c\"/>\n      <log expr=\"'At target ' + target_temp_01c\" label=\"FW\"/>\n    </onentry>\n    <transition target=\"heating\" event=\"C0HI\" editor:id=\"t_01KP3PX775QRNK47HN11SPHF4C\">\n      <assign location=\"target_temp_01c\" expr=\"_event.data.hi || 0\"/>\n    </transition>\n    <transition target=\"at_temperature\" event=\"C0HC\" editor:id=\"t_01KP3PX7754BH6P2CFJCENN746\">\n      <assign location=\"target_temp_01c\" expr=\"_event.data.hc || 0\"/>\n    </transition>\n    <transition target=\"off\" event=\"C0HF\" editor:id=\"t_01KP3PX775963GM57AYEYH53C7\">\n      <assign location=\"target_temp_01c\" expr=\"0\"/>\n      <log expr=\"'Temp off'\" label=\"FW\"/>\n    </transition>\n    <transition target=\"at_temperature\" event=\"C0RP\" editor:id=\"t_01KP3PX775AJYY3ZFYS2KXCG5Z\">\n      <log expr=\"'Query temp: ' + current_temp_01c\" label=\"FW\"/>\n    </transition>\n  </state>\n  <state id=\"error_temp\" editor:x=\"550\" editor:y=\"150\" editor:width=\"125\" editor:height=\"75\" editor:label=\"error_temp\" editor:color=\"#2a2a3c\" editor:zIndex=\"3\">\n    <onentry>\n      <log expr=\"'Temp error ' + last_error\" label=\"ERROR\"/>\n    </onentry>\n    <transition target=\"off\" event=\"C0HF\" editor:id=\"t_01KP3PX775JSP6YFRZFG0JH9RQ\">\n      <assign location=\"last_error\" expr=\"0\"/>\n    </transition>\n  </state>\n</scxml>",
+    "scxmlPath" : null,
+    "target" : "javascript",
+    "options" : {
+      "packageName" : null,
+      "namespace" : null,
+      "className" : "TemperatureSM",
+      "bundleAuto" : false,
+      "bundle" : [ ],
+      "codeOnly" : true,
+      "amalgamate" : false,
+      "bundleRuntime" : false,
+      "runtimePath" : null,
+      "plcPlatform" : null,
+      "eventQueueDepth" : 16,
+      "tracingMode" : null
+    }
+  }
+}
